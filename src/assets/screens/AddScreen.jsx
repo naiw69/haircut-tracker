@@ -11,13 +11,12 @@ export default function AddScreen({ onSave }) {
   const [form, setForm] = useState({
     name: "",
     rating: "Good",
-    barber: "",
+    location: "",
     date: new Date().toISOString().split("T")[0],
-    price: "",
+    price: 0,
     photo_url: null,
     notes: "",
     tags: ["Everyday"],
-    reminder_weeks: 3,
   });
   const [errors, setErrors] = useState({});
 
@@ -47,12 +46,11 @@ export default function AddScreen({ onSave }) {
       user_id: user.id,
       name: form.name,
       rating: form.rating,
-      barber: form.barber,
+      location: form.location,
       date: form.date,
       price: parseFloat(form.price) || 0,
       notes: form.notes,
       tags: form.tags,
-      reminder_weeks: form.reminder_weeks,
     });
     setLoading(false);
     if (error) {
@@ -147,8 +145,8 @@ export default function AddScreen({ onSave }) {
             <Field label="Barber / Salon">
               <input
                 style={s.input}
-                value={form.barber}
-                onChange={(e) => set("barber", e.target.value)}
+                value={form.location}
+                onChange={(e) => set("location", e.target.value)}
                 placeholder="e.g. Juan's Barbershop"
               />
             </Field>
@@ -346,18 +344,68 @@ function ChipRow({ options, value, onChange, multi = false }) {
 function PhotoUpload({ value, onChange, userId }) {
   const [uploading, setUploading] = useState(false);
 
+  const compressImage = (file, maxDim = 1200, quality = 0.75) => {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = async () => {
+        const scale = Math.min(1, maxDim / Math.max(image.width, image.height));
+        const width = Math.round(image.width * scale);
+        const height = Math.round(image.height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(image, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("Image compression failed"));
+            } else {
+              resolve(
+                new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), {
+                  type: "image/jpeg",
+                }),
+              );
+            }
+          },
+          "image/jpeg",
+          quality,
+        );
+      };
+      image.onerror = reject;
+      image.src = URL.createObjectURL(file);
+    });
+  };
+
   const handleFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
-    const ext = file.name.split(".").pop();
-    const path = `${userId}/${Date.now()}.${ext}`;
+
+    let uploadFile = file;
+    try {
+      uploadFile = await compressImage(file, 1200, 0.7);
+    } catch (error) {
+      console.warn("Compression failed, falling back to original file:", error);
+      uploadFile = file;
+    }
+
+    const ext = "jpg";
+    const finalUserId = userId || "public";
+    const path = `${finalUserId}/${Date.now()}.${ext}`;
+
     const { error } = await supabase.storage
       .from("haircut-photos")
-      .upload(path, file);
+      .upload(path, uploadFile, { upsert: true });
+
     if (!error) {
-      const { data } = supabase.storage.from("haircut-photos").getPublicUrl(path);
+      const { data } = supabase.storage
+        .from("haircut-photos")
+        .getPublicUrl(path);
       onChange(data.publicUrl);
+    } else {
+      console.error("Upload error:", error);
     }
     setUploading(false);
   };
