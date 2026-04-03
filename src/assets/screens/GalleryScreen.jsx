@@ -9,7 +9,7 @@ export default function GalleryScreen({ onAddNew }) {
   const [filter, setFilter] = useState("All");
   const [selected, setSelected] = useState(null);
 
-  const FILTERS = ["All", "Short", "Fade", "Medium", "Bold", "Classic"];
+  const FILTERS = ["All", "Taper", "Fade", "High", "Low", "Mid", "Burst", "Undercut", "Buzz"];
 
   // 1. Define the function first
  const fetchCuts = useCallback(async () => {
@@ -48,13 +48,19 @@ export default function GalleryScreen({ onAddNew }) {
 
 
   const filtered = cuts.filter((c) => {
-    const matchFilter = filter === "All" || c.category === filter;
-    const matchSearch =
-      !search ||
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.barber?.toLowerCase().includes(search.toLowerCase());
-    return matchFilter && matchSearch;
-  });
+  // 1. Filter by Name Keywords (Low, Mid, High, etc.)
+  const matchFilter = 
+    filter === "All" || 
+    c.name.toLowerCase().includes(filter.toLowerCase());
+
+  // 2. Search by Name or Barber
+  const matchSearch =
+    !search ||
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    c.barber?.toLowerCase().includes(search.toLowerCase());
+
+  return matchFilter && matchSearch;
+});
 
   // Detail view
   if (selected)
@@ -185,7 +191,7 @@ function DetailView({ cut, onBack, onDelete }) {
             style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         ) : (
-          <PlaceholderHair color={cut.hair_color} large />
+          <PlaceholderHair large />
         )}
         <button style={s.backBtn} onClick={onBack}>
           <ChevronLeft />
@@ -250,7 +256,7 @@ function DetailView({ cut, onBack, onDelete }) {
         <div style={s.divider} />
 
         {[
-          ["Barber / Salon", cut.barber || "—"],
+          ["Barber / Salon", cut.location || "—"],
           ["Price paid", `₱${cut.price}`],
           ["Go back?", cut.go_back || "—"],
         ].map(([label, val]) => (
@@ -260,22 +266,8 @@ function DetailView({ cut, onBack, onDelete }) {
           </div>
         ))}
 
-        <div style={s.detailRow}>
-          <span style={s.detailLabel}>Hair color</span>
-          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span
-              style={{
-                width: 14,
-                height: 14,
-                borderRadius: "50%",
-                background: cut.hair_color,
-                display: "inline-block",
-                border: "1px solid rgba(0,0,0,0.1)",
-              }}
-            />
-            <span style={s.detailVal}>{cut.hair_color}</span>
-          </span>
-        </div>
+
+      
 
         <div style={s.divider} />
         <div

@@ -1,5 +1,5 @@
 // HomePage.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import GalleryScreen from "./assets/screens/GalleryScreen";
 import StatsScreen from "./assets/screens/StatsScreen";
 import AddScreen from "./assets/screens/AddScreen";
@@ -8,6 +8,13 @@ import { supabase } from "./supabaseClient";
 export default function HomePage() {
   const [tab, setTab] = useState("gallery");
   const [profileOpen, setProfileOpen] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+  }, []);
 
   const screens = {
     gallery: {
@@ -65,14 +72,14 @@ export default function HomePage() {
 
       {/* Profile Modal */}
       {profileOpen && (
-        <ProfileModal onClose={() => setProfileOpen(false)} />
+        <ProfileModal user={user} onClose={() => setProfileOpen(false)} />
       )}
     </div>
   );
 }
 
 /* ─── Profile Modal ─────────────────────────────────────────── */
-function ProfileModal({ onClose }) {
+function ProfileModal({ user, onClose }) {
   const [view, setView] = useState("menu"); // "menu" | "username" | "password"
   const [username, setUsername] = useState("");
   const [currentPw, setCurrentPw] = useState("");
@@ -130,7 +137,7 @@ function ProfileModal({ onClose }) {
             <div style={m.avatarRow}>
               <div style={m.bigAvatar}><UserIcon size={28} color="#fff" /></div>
               <div>
-                <p style={m.name}>My Account</p>
+                <p style={m.name}>{user?.user_metadata?.full_name || "My Account"}</p>
                 <p style={m.email}>Manage your profile</p>
               </div>
             </div>
