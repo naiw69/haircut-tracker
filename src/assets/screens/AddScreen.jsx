@@ -51,6 +51,7 @@ export default function AddScreen({ onSave }) {
       price: parseFloat(form.price) || 0,
       notes: form.notes,
       tags: form.tags,
+      photo_url: form.photo_url,
     });
     setLoading(false);
     if (error) {
