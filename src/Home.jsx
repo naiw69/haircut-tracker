@@ -20,7 +20,7 @@ export default function HomePage() {
     gallery: {
       title: "Gallery",
       sub: "Your haircut collection",
-      component: <GalleryScreen />,
+      component: <GalleryScreen onAddNew={() => setTab("add")} />,
     },
     data: {
       title: "Stats",
@@ -362,7 +362,7 @@ const s = {
     marginTop: 4,
     transition: "background 0.15s",
   },
-  screen: { flex: 1, overflowY: "auto", paddingBottom: 80 },
+  screen: { flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch" },
   tabBar: {
     height: 72,
     borderTop: "0.5px solid #e8e8e8",

@@ -188,7 +188,7 @@ function DetailView({ cut, onBack, onDelete }) {
           <img
             src={cut.photo_url}
             alt={cut.name}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            style={{ width: "100%", height: "90%", objectFit: "cover" }}
           />
         ) : (
           <PlaceholderHair large />
@@ -258,7 +258,6 @@ function DetailView({ cut, onBack, onDelete }) {
         {[
           ["Barber / Salon", cut.location || "—"],
           ["Price paid", `₱${cut.price}`],
-          ["Go back?", cut.go_back || "—"],
         ].map(([label, val]) => (
           <div key={label} style={s.detailRow}>
             <span style={s.detailLabel}>{label}</span>
