@@ -9,14 +9,26 @@ export default function GalleryScreen({ onAddNew }) {
   const [filter, setFilter] = useState("All");
   const [selected, setSelected] = useState(null);
 
-  const FILTERS = ["All", "Taper", "Fade", "High", "Low", "Mid", "Burst", "Undercut", "Buzz"];
+  const FILTERS = [
+    "All",
+    "Taper",
+    "Fade",
+    "High",
+    "Low",
+    "Mid",
+    "Burst",
+    "Undercut",
+    "Buzz",
+  ];
 
   // 1. Define the function first
- const fetchCuts = useCallback(async () => {
+  const fetchCuts = useCallback(async () => {
     try {
       setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) return; // Guard clause if no user is found
 
       const { data, error } = await supabase
@@ -36,7 +48,7 @@ export default function GalleryScreen({ onAddNew }) {
   // 3. Now the effect is safe and won't cause cascading renders
   useEffect(() => {
     fetchCuts();
-  }, [fetchCuts]); 
+  }, [fetchCuts]);
 
   const deleteCut = async (id) => {
     if (!window.confirm("Delete this haircut?")) return;
@@ -45,22 +57,19 @@ export default function GalleryScreen({ onAddNew }) {
     fetchCuts();
   };
 
-
-
   const filtered = cuts.filter((c) => {
-  // 1. Filter by Name Keywords (Low, Mid, High, etc.)
-  const matchFilter = 
-    filter === "All" || 
-    c.name.toLowerCase().includes(filter.toLowerCase());
+    // 1. Filter by Name Keywords (Low, Mid, High, etc.)
+    const matchFilter =
+      filter === "All" || c.name.toLowerCase().includes(filter.toLowerCase());
 
-  // 2. Search by Name or Barber
-  const matchSearch =
-    !search ||
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.barber?.toLowerCase().includes(search.toLowerCase());
+    // 2. Search by Name or Barber
+    const matchSearch =
+      !search ||
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.barber?.toLowerCase().includes(search.toLowerCase());
 
-  return matchFilter && matchSearch;
-});
+    return matchFilter && matchSearch;
+  });
 
   // Detail view
   if (selected)
@@ -264,9 +273,6 @@ function DetailView({ cut, onBack, onDelete }) {
             <span style={s.detailVal}>{val}</span>
           </div>
         ))}
-
-
-      
 
         <div style={s.divider} />
         <div
