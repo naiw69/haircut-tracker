@@ -57,15 +57,46 @@ export default function StatsScreen() {
     fetchCuts();
   }, [fetchCuts]);
 
-  // Derived stats
-  const totalCuts = cuts.length;
-  const totalSpent = cuts.reduce((s, c) => s + (parseFloat(c.price) || 0), 0);
+  // Period-filtered cuts
+  const periodStart = (() => {
+    const now = new Date();
+    const start = new Date(now);
+    if (period === "This month") {
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+      return start;
+    }
+
+    if (period === "Last 6 months") {
+      start.setMonth(start.getMonth() - 5);
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+      return start;
+    }
+
+    if (period === "This year") {
+      return new Date(now.getFullYear(), 0, 1);
+    }
+
+    return null;
+  })();
+
+  const filteredCuts =
+    period === "All time"
+      ? cuts
+      : cuts.filter((c) => new Date(c.date) >= periodStart);
+
+  const totalCuts = filteredCuts.length;
+  const totalSpent = filteredCuts.reduce(
+    (s, c) => s + (parseFloat(c.price) || 0),
+    0,
+  );
   const avgPrice = totalCuts ? Math.round(totalSpent / totalCuts) : 0;
 
   // Average interval in days
   const avgInterval = (() => {
-    if (cuts.length < 2) return null;
-    const sorted = [...cuts].sort(
+    if (filteredCuts.length < 2) return null;
+    const sorted = [...filteredCuts].sort(
       (a, b) => new Date(a.date) - new Date(b.date),
     );
     const gaps = sorted
@@ -77,27 +108,90 @@ export default function StatsScreen() {
     return Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length);
   })();
 
-  // Monthly counts for line chart (last 6 months)
-  const monthlyData = (() => {
+  // Breakdown data for selected period
+  const periodData = (() => {
     const now = new Date();
-    return Array.from({ length: 6 }, (_, i) => {
-      const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
-      const label = d.toLocaleString("default", { month: "short" });
-      const count = cuts.filter((c) => {
+
+    if (period === "This month") {
+      const daysInMonth = new Date(
+        now.getFullYear(),
+        now.getMonth() + 1,
+        0,
+      ).getDate();
+      return Array.from({ length: daysInMonth }, (_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth(), i + 1);
+        const count = filteredCuts.filter((c) => {
+          const cd = new Date(c.date);
+          return (
+            cd.getFullYear() === d.getFullYear() &&
+            cd.getMonth() === d.getMonth() &&
+            cd.getDate() === d.getDate()
+          );
+        }).length;
+        return { label: String(i + 1), count };
+      });
+    }
+
+    if (period === "This year") {
+      return Array.from({ length: now.getMonth() + 1 }, (_, i) => {
+        const d = new Date(now.getFullYear(), i, 1);
+        const label = d.toLocaleString("default", { month: "short" });
+        const count = filteredCuts.filter((c) => {
+          const cd = new Date(c.date);
+          return (
+            cd.getFullYear() === d.getFullYear() &&
+            cd.getMonth() === d.getMonth()
+          );
+        }).length;
+        return { label, count };
+      });
+    }
+
+    if (period === "Last 6 months") {
+      return Array.from({ length: 6 }, (_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+        const label = d.toLocaleString("default", { month: "short" });
+        const count = filteredCuts.filter((c) => {
+          const cd = new Date(c.date);
+          return (
+            cd.getMonth() === d.getMonth() &&
+            cd.getFullYear() === d.getFullYear()
+          );
+        }).length;
+        return { label, count };
+      });
+    }
+
+    // All time
+    const sortedCuts = [...filteredCuts].sort(
+      (a, b) => new Date(a.date) - new Date(b.date),
+    );
+    if (!sortedCuts.length) return [];
+
+    const first = new Date(sortedCuts[0].date);
+    let current = new Date(first.getFullYear(), first.getMonth(), 1);
+    const end = new Date(now.getFullYear(), now.getMonth(), 1);
+    const data = [];
+    while (current <= end) {
+      const label = current.toLocaleString("default", { month: "short" });
+      const count = filteredCuts.filter((c) => {
         const cd = new Date(c.date);
         return (
-          cd.getMonth() === d.getMonth() && cd.getFullYear() === d.getFullYear()
+          cd.getFullYear() === current.getFullYear() &&
+          cd.getMonth() === current.getMonth()
         );
       }).length;
-      return { label, count };
-    });
+      data.push({ label, count });
+      current.setMonth(current.getMonth() + 1);
+    }
+    return data;
   })();
 
-  // Style breakdown
-  const styleCounts = cuts.reduce((acc, c) => {
+  const styleCounts = filteredCuts.reduce((acc, c) => {
     acc[c.name] = (acc[c.name] || 0) + 1;
     return acc;
   }, {});
+
   const topStyles = Object.entries(styleCounts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
@@ -105,22 +199,22 @@ export default function StatsScreen() {
 
   // Rating breakdown
   const ratingCounts = { Fire: 0, Good: 0, Meh: 0 };
-  cuts.forEach((c) => {
+  filteredCuts.forEach((c) => {
     if (ratingCounts[c.rating] !== undefined) ratingCounts[c.rating]++;
   });
 
   // Next cut due
-  const lastCut = cuts[0];
+  const lastCut = filteredCuts[0];
   const nextDue =
     lastCut && avgInterval
       ? new Date(new Date(lastCut.date).getTime() + avgInterval * 86400000)
       : null;
 
   const lineData = {
-    labels: monthlyData.map((m) => m.label),
+    labels: periodData.map((m) => m.label),
     datasets: [
       {
-        data: monthlyData.map((m) => m.count),
+        data: periodData.map((m) => m.count),
         borderColor: "#0a0a0a",
         backgroundColor: "rgba(10,10,10,0.06)",
         borderWidth: 2.5,
@@ -248,7 +342,7 @@ export default function StatsScreen() {
       </Section>
 
       {/* Donut charts */}
-      <Section label="Ratings & lengths">
+      <Section label="Ratings">
         <div style={s.donutRow}>
           {/* Rating donut */}
           <div style={s.donutCard}>
@@ -267,15 +361,13 @@ export default function StatsScreen() {
               <LegItem color="#d8d8d8" label={`Meh ${mehPct}%`} />
             </div>
           </div>
-          {/* Length donut */}
-          <LengthDonut cuts={cuts} />
         </div>
       </Section>
 
       {/* Timeline */}
       <Section label="Recent history">
         <div style={s.chartCard}>
-          {cuts.slice(0, 3).map((c) => (
+          {filteredCuts.slice(0, 3).map((c) => (
             <div key={c.id} style={s.tlRow}>
               <div style={s.tlDot}>
                 <svg
@@ -393,7 +485,30 @@ function StatCard({ val, label, trend, up, neutral }) {
 
 function DonutChart({ segments, center }) {
   const C = 2 * Math.PI * 30;
-  let offset = 0;
+  const segmentElements = segments.reduce(
+    (acc, { pct, color }, i) => {
+      const dash = (pct / 100) * C;
+      const gap = C - dash;
+      acc.elements.push(
+        <circle
+          key={i}
+          cx="44"
+          cy="44"
+          r="30"
+          fill="none"
+          stroke={color}
+          strokeWidth="13"
+          strokeDasharray={`${dash.toFixed(1)} ${gap.toFixed(1)}`}
+          strokeDashoffset={-acc.offset}
+          transform="rotate(-90 44 44)"
+        />,
+      );
+      acc.offset += dash;
+      return acc;
+    },
+    { offset: 0, elements: [] },
+  ).elements;
+
   return (
     <svg width="88" height="88" viewBox="0 0 88 88">
       <circle
@@ -404,26 +519,7 @@ function DonutChart({ segments, center }) {
         stroke="#ececec"
         strokeWidth="13"
       />
-      {segments.map(({ pct, color }, i) => {
-        const dash = (pct / 100) * C;
-        const gap = C - dash;
-        const el = (
-          <circle
-            key={i}
-            cx="44"
-            cy="44"
-            r="30"
-            fill="none"
-            stroke={color}
-            strokeWidth="13"
-            strokeDasharray={`${dash.toFixed(1)} ${gap.toFixed(1)}`}
-            strokeDashoffset={-offset}
-            transform="rotate(-90 44 44)"
-          />
-        );
-        offset += dash;
-        return el;
-      })}
+      {segmentElements}
       <text
         x="44"
         y="48"
@@ -436,35 +532,6 @@ function DonutChart({ segments, center }) {
         {center}
       </text>
     </svg>
-  );
-}
-
-function LengthDonut({ cuts }) {
-  const counts = { Short: 0, Medium: 0, Long: 0 };
-  cuts.forEach((c) => {
-    if (counts[c.category] !== undefined) counts[c.category]++;
-  });
-  const total = cuts.length || 1;
-  const sPct = Math.round((counts.Short / total) * 100);
-  const mPct = Math.round((counts.Medium / total) * 100);
-  const lPct = 100 - sPct - mPct;
-  return (
-    <div style={s.donutCard}>
-      <div style={s.donutTitle}>By length</div>
-      <DonutChart
-        segments={[
-          { pct: sPct, color: "#0a0a0a" },
-          { pct: mPct, color: "#888" },
-          { pct: lPct, color: "#d8d8d8" },
-        ]}
-        center={cuts.length}
-      />
-      <div style={s.legend}>
-        <LegItem color="#0a0a0a" label={`Short ${sPct}%`} />
-        <LegItem color="#888" label={`Medium ${mPct}%`} />
-        <LegItem color="#d8d8d8" label={`Long ${lPct}%`} />
-      </div>
-    </div>
   );
 }
 
@@ -562,11 +629,7 @@ const s = {
     color: "#fff",
     fontFamily: "monospace",
   },
-  donutRow: {
-    display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0,1fr))",
-    gap: 10,
-  },
+  
   donutCard: {
     background: "#f7f7f7",
     borderRadius: 16,
