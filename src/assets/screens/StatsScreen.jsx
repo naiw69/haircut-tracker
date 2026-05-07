@@ -456,7 +456,17 @@ function Section({ label, children }) {
 
 function StatCard({ val, label, trend, up, neutral }) {
   return (
-    <div style={{ background: "#f7f7f7", borderRadius: 14, padding: 14 }}>
+    <div
+      style={{
+        background: "#f7f7f7",
+        borderRadius: 14,
+        padding: 14,
+        borderTop: "1px solid rgba(255, 255, 255, 0.4)" /* Glass effect */,
+        borderLeft: "1px solid rgba(255, 255, 255, 0.3)",
+        boxShadow: "3px 3px 3px rgba(0, 0, 0, 0.089)",
+        backdropFilter: "blur(8px)" /* The blurring effect */,
+      }}
+    >
       <div
         style={{
           fontSize: 24,
@@ -594,7 +604,15 @@ const s = {
     gridTemplateColumns: "repeat(2, minmax(0,1fr))",
     gap: 10,
   },
-  chartCard: { background: "#f7f7f7", borderRadius: 16, padding: 16 },
+  chartCard: {
+    background: "#f7f7f7",
+    borderRadius: 16,
+    padding: 16,
+    borderTop: "1px solid rgba(255, 255, 255, 0.4)" /* Glass effect */,
+    borderLeft: "1px solid rgba(255, 255, 255, 0.3)",
+    boxShadow: "3px 3px 3px rgba(0, 0, 0, 0.089)",
+    backdropFilter: "blur(8px)" /* The blurring effect */,
+  },
   barRow: { display: "flex", alignItems: "center", gap: 10, marginBottom: 10 },
   barLabel: {
     fontSize: 12,
@@ -629,7 +647,7 @@ const s = {
     color: "#fff",
     fontFamily: "monospace",
   },
-  
+
   donutCard: {
     background: "#f7f7f7",
     borderRadius: 16,
@@ -637,6 +655,10 @@ const s = {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
+    borderTop: "1px solid rgba(255, 255, 255, 0.4)" /* Glass effect */,
+    borderLeft: "1px solid rgba(255, 255, 255, 0.3)",
+    boxShadow: "3px 3px 3px rgba(0, 0, 0, 0.089)",
+    backdropFilter: "blur(8px)" /* The blurring effect */,
   },
   donutTitle: {
     fontSize: 12,

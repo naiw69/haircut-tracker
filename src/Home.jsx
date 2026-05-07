@@ -19,12 +19,10 @@ export default function HomePage() {
   const screens = {
     gallery: {
       title: "Gallery",
-      sub: "Your haircut collection",
       component: <GalleryScreen onAddNew={() => setTab("add")} />,
     },
     data: {
-      title: "Stats",
-      sub: "Insights on your cuts",
+      title: "Statistics",
       component: <StatsScreen />,
     },
     add: {

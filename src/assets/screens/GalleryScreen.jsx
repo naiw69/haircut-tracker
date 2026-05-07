@@ -8,6 +8,7 @@ export default function GalleryScreen({ onAddNew }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
   const [selected, setSelected] = useState(null);
+  const [editing, setEditing] = useState(null); // holds the cut being edited
 
   const FILTERS = [
     "All",
@@ -71,6 +72,19 @@ export default function GalleryScreen({ onAddNew }) {
     return matchFilter && matchSearch;
   });
 
+  if (editing)
+    return (
+      <EditView
+        cut={editing}
+        onBack={() => setEditing(null)}
+        onSaved={(updated) => {
+          setEditing(null);
+          setSelected(updated); // go back to detail with fresh data
+          fetchCuts();
+        }}
+      />
+    );
+
   // Detail view
   if (selected)
     return (
@@ -78,17 +92,14 @@ export default function GalleryScreen({ onAddNew }) {
         cut={selected}
         onBack={() => setSelected(null)}
         onDelete={() => deleteCut(selected.id)}
+        onEdit={(cut) => setEditing(cut)} // ← new
       />
     );
 
   // Gallery view
   return (
     <div style={s.container}>
-      <div style={s.header}>
-        <p style={s.sub}>
-          {cuts.length} haircut{cuts.length !== 1 ? "s" : ""} logged
-        </p>
-      </div>
+   
 
       {/* Search */}
       <div style={s.searchWrap}>
@@ -182,7 +193,7 @@ export default function GalleryScreen({ onAddNew }) {
   );
 }
 
-function DetailView({ cut, onBack, onDelete }) {
+function DetailView({ cut, onBack, onDelete, onEdit }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div
@@ -212,7 +223,7 @@ function DetailView({ cut, onBack, onDelete }) {
           >
             <ShareIcon />
           </button>
-          <button style={s.actionBtn} onClick={() => alert("Edit coming soon")}>
+          <button style={s.actionBtn} onClick={() => onEdit(cut)}>
             <EditIcon />
           </button>
         </div>
@@ -316,6 +327,191 @@ function PlaceholderHair({ color = "#1a0a04", large }) {
       <ellipse cx="80" cy="122" rx="29" ry="22" fill="#c8906a" />
       <rect x="51" y="136" width="58" height="77" rx="12" fill="#c8906a" />
     </svg>
+  );
+}
+
+function EditView({ cut, onBack, onSaved }) {
+  const [form, setForm] = useState({
+    name: cut.name || "",
+    date: cut.date || "",
+    price: cut.price || "",
+    location: cut.location || "",
+    rating: cut.rating || "Good",
+    notes: cut.notes || "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const field = (key) => ({
+    value: form[key],
+    onChange: (e) => setForm((f) => ({ ...f, [key]: e.target.value })),
+  });
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError(null);
+    const { data, error } = await supabase
+      .from("haircuts")
+      .update({
+        name: form.name,
+        date: form.date,
+        price: Number(form.price),
+        location: form.location,
+        rating: form.rating,
+        notes: form.notes,
+      })
+      .eq("id", cut.id)
+      .select()
+      .single();
+
+    setSaving(false);
+    if (error) return setError(error.message);
+    onSaved(data);
+  };
+
+  const inputStyle = {
+    width: "100%",
+    padding: "11px 14px",
+    borderRadius: 12,
+    border: "1.5px solid #e8e8e8",
+    fontSize: 14,
+    fontFamily: "inherit",
+    color: "#0a0a0a",
+    background: "#fafafa",
+    outline: "none",
+    boxSizing: "border-box",
+  };
+
+  const labelStyle = {
+    fontSize: 12,
+    fontWeight: 600,
+    color: "#888",
+    letterSpacing: "0.8px",
+    textTransform: "uppercase",
+    marginBottom: 6,
+    display: "block",
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      {/* Header */}
+      <div
+        style={{
+          padding: "16px 20px",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          borderBottom: "0.5px solid #ececec",
+        }}
+      >
+        <button
+          style={{ ...s.actionBtn, background: "#f3f3f3" }}
+          onClick={onBack}
+        >
+          <ChevronLeft />
+        </button>
+        <h2
+          style={{ fontSize: 17, fontWeight: 600, color: "#0a0a0a", flex: 1 }}
+        >
+          Edit Haircut
+        </h2>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          style={{
+            padding: "8px 18px",
+            borderRadius: 20,
+            background: "#0a0a0a",
+            color: "#fff",
+            fontSize: 14,
+            fontWeight: 600,
+            border: "none",
+            cursor: saving ? "not-allowed" : "pointer",
+            opacity: saving ? 0.6 : 1,
+            fontFamily: "inherit",
+          }}
+        >
+          {saving ? "Saving…" : "Save"}
+        </button>
+      </div>
+
+      {/* Form */}
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: "20px 20px 40px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
+        }}
+      >
+        {error && (
+          <div
+            style={{
+              padding: 12,
+              borderRadius: 12,
+              background: "#fff5f5",
+              color: "#e24b4a",
+              fontSize: 13,
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        <div>
+          <label style={labelStyle}>Cut Name</label>
+          <input
+            style={inputStyle}
+            {...field("name")}
+            placeholder="e.g. High Fade"
+          />
+        </div>
+
+        <div>
+          <label style={labelStyle}>Date</label>
+          <input style={inputStyle} type="date" {...field("date")} />
+        </div>
+
+        <div>
+          <label style={labelStyle}>Price (₱)</label>
+          <input
+            style={inputStyle}
+            type="number"
+            {...field("price")}
+            placeholder="e.g. 150"
+          />
+        </div>
+
+        <div>
+          <label style={labelStyle}>Barber / Salon</label>
+          <input
+            style={inputStyle}
+            {...field("location")}
+            placeholder="e.g. Juan's Barbershop"
+          />
+        </div>
+
+        <div>
+          <label style={labelStyle}>Rating</label>
+          <select style={inputStyle} {...field("rating")}>
+            <option value="Fire">🔥 Fire</option>
+            <option value="Good">😊 Good</option>
+            <option value="Meh">😐 Meh</option>
+          </select>
+        </div>
+
+        <div>
+          <label style={labelStyle}>Notes</label>
+          <textarea
+            style={{ ...inputStyle, minHeight: 100, resize: "vertical" }}
+            {...field("notes")}
+            placeholder="Any details about this cut…"
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 
