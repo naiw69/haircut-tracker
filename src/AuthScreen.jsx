@@ -78,13 +78,17 @@ export function AuthScreen() {
 
   return (
     <div style={styles.container}>
+       {/* Temporarily disabling the Signup Tab
       <div style={styles.tabs}>
+        
         <button
           style={tab === "login" ? styles.tabActive : styles.tab}
           onClick={() => setTab("login")}
         >
           Log in
         </button>
+
+       
         <button
           style={tab === "signup" ? styles.tabActive : styles.tab}
           onClick={() => setTab("signup")}
@@ -92,7 +96,10 @@ export function AuthScreen() {
           Sign up
         </button>
       </div>
-
+       */}
+      <div>
+        <h2 style={styles.title}>Barsi</h2>
+      </div>
       {tab === "signup" && (
         <input
           style={styles.input}
@@ -130,14 +137,16 @@ export function AuthScreen() {
             : "Create account"}
       </button>
 
-      <button style={styles.btnGoogle} onClick={handleGoogle}>
+   {/*  <button style={styles.btnGoogle} onClick={handleGoogle}>
         Continue with Google
       </button>
+*/}
     </div>
   );
 }
 
 const styles = {
+  title: { textAlign: "center", fontSize: 32, marginBottom: 28 },
   container: {
     maxWidth: 390,
     margin: "0 auto",
@@ -198,6 +207,7 @@ const styles = {
     fontWeight: 600,
     cursor: "pointer",
     marginBottom: 14,
+    
   },
   btnGoogle: {
     width: "100%",
