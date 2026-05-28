@@ -25,7 +25,7 @@ export default function AddScreen({ onSave }) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-        
+
         const { data, error } = await supabase
           .from("haircuts")
           .select("name, location")
@@ -106,21 +106,6 @@ export default function AddScreen({ onSave }) {
   return (
     <div style={s.container}>
       <div style={s.body}>
-        <div style={{ padding: "20px 0 24px" }}>
-          <div
-            style={{
-              fontSize: 22,
-              fontWeight: 600,
-              color: "#0a0a0a",
-              letterSpacing: "-0.5px",
-            }}
-          >
-            Log new haircut
-          </div>
-          <div style={{ fontSize: 13, color: "#999", marginTop: 5 }}>
-            Fill in the details of your latest style below.
-          </div>
-        </div>
 
         <Field label="Style name" error={errors.name}>
           <AutocompleteInput
