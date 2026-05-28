@@ -1,11 +1,9 @@
 // screens/AddScreen.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "../../supabaseClient";
 
-const STEPS = ["Style", "Location", "Photo", "Notes"];
 
 export default function AddScreen({ onSave }) {
-  const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [form, setForm] = useState({
@@ -19,11 +17,39 @@ export default function AddScreen({ onSave }) {
     tags: ["Everyday"],
   });
   const [errors, setErrors] = useState({});
+  const [history, setHistory] = useState({ names: [], locations: [] });
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabase
+          .from("haircuts")
+          .select("name, location")
+          .eq("user_id", user.id);
+
+        if (data && !error) {
+          const names = [...new Set(data.map((item) => item.name).filter(Boolean))];
+          const locations = [...new Set(data.map((item) => item.location).filter(Boolean))];
+          setHistory({ names, locations });
+        }
+      } catch (err) {
+        console.error("Error fetching haircut history:", err);
+      }
+    };
+
+    fetchHistory();
+  }, []);
+
+  const styleSuggestions = [...new Set([...history.names, ...DEFAULT_STYLES])];
+  const barberSuggestions = [...new Set([...history.locations, ...DEFAULT_BARBERS])];
+
   const validate = () => {
-    if (step === 0 && !form.name.trim()) {
+    if (!form.name.trim()) {
       setErrors({ name: "Please enter a style name" });
       return false;
     }
@@ -31,13 +57,9 @@ export default function AddScreen({ onSave }) {
     return true;
   };
 
-  const next = async () => {
+  const handleSubmit = async () => {
     if (!validate()) return;
-    if (step < STEPS.length - 1) {
-      setStep((s) => s + 1);
-      return;
-    }
-    // Final step — save to Supabase
+
     setLoading(true);
     const {
       data: { user },
@@ -73,7 +95,6 @@ export default function AddScreen({ onSave }) {
           style={s.btnBlack}
           onClick={() => {
             setSaved(false);
-            setStep(0);
             onSave?.();
           }}
         >
@@ -84,163 +105,130 @@ export default function AddScreen({ onSave }) {
 
   return (
     <div style={s.container}>
-      {/* Progress */}
-      <div style={s.progressTrack}>
-        <div
-          style={{
-            ...s.progressFill,
-            width: `${((step + 1) / STEPS.length) * 100}%`,
-          }}
-        />
-      </div>
-
       <div style={s.body}>
-        {/* Step 0 — Style */}
-        {step === 0 && (
-          <div>
-            <StepHeader
-              num={1}
-              title="What's the style?"
-              sub="Name the cut and pick a category."
-            />
-            <Field label="Style name" error={errors.name}>
-              <input
-                style={{ ...s.input, ...(errors.name ? s.inputErr : {}) }}
-                value={form.name}
-                onChange={(e) => set("name", e.target.value)}
-                placeholder="e.g. Low fade with taper"
-              />
-            </Field>
-            <Field label="Your rating">
-              <div style={s.ratingRow}>
-                {[
-                  ["😐", "Meh"],
-                  ["😊", "Good"],
-                  ["🔥", "Fire"],
-                ].map(([icon, label]) => (
-                  <button
-                    key={label}
-                    style={{
-                      ...s.ratingBtn,
-                      ...(form.rating === label ? s.ratingBtnSel : {}),
-                    }}
-                    onClick={() => set("rating", label)}
-                  >
-                    <span style={{ fontSize: 18 }}>{icon}</span>
-                    <span>{label}</span>
-                  </button>
-                ))}
-              </div>
-            </Field>
+        <div style={{ padding: "20px 0 24px" }}>
+          <div
+            style={{
+              fontSize: 22,
+              fontWeight: 600,
+              color: "#0a0a0a",
+              letterSpacing: "-0.5px",
+            }}
+          >
+            Log new haircut
           </div>
-        )}
-
-        {/* Step 1 — Location */}
-        {step === 1 && (
-          <div>
-            <StepHeader
-              num={2}
-              title="Where & how much?"
-              sub="Log the barber and what you paid."
-            />
-            <Field label="Barber / Salon">
-              <input
-                style={s.input}
-                value={form.location}
-                onChange={(e) => set("location", e.target.value)}
-                placeholder="e.g. Juan's Barbershop"
-              />
-            </Field>
-            <Field label="Date of cut">
-              <input
-                style={s.input}
-                type="date"
-                value={form.date}
-                onChange={(e) => set("date", e.target.value)}
-              />
-            </Field>
-            <Field label="Price paid (₱)">
-              <input
-                style={s.input}
-                type="number"
-                value={form.price}
-                onChange={(e) => set("price", e.target.value)}
-                placeholder="0"
-              />
-            </Field>
+          <div style={{ fontSize: 13, color: "#999", marginTop: 5 }}>
+            Fill in the details of your latest style below.
           </div>
-        )}
+        </div>
 
-        {/* Step 2 — Photo */}
-        {step === 2 && (
-          <div>
-            <StepHeader
-              num={3}
-              title="Add a photo"
-              sub="A picture is worth a thousand cuts."
-            />
-            <Field label="Photo">
-              <PhotoUpload
-                value={form.photo_url}
-                onChange={(url) => set("photo_url", url)}
-                userId={null}
-              />
-            </Field>
-          </div>
-        )}
+        <Field label="Style name" error={errors.name}>
+          <AutocompleteInput
+            value={form.name}
+            onChange={(e) => set("name", e.target.value)}
+            placeholder="e.g. Low fade with taper"
+            suggestions={styleSuggestions}
+            error={errors.name}
+          />
+        </Field>
 
-        {/* Step 3 — Notes */}
-        {step === 3 && (
-          <div>
-            <StepHeader
-              num={4}
-              title="Any notes?"
-              sub="Details you want to remember."
-            />
-            <Field label="Notes">
-              <textarea
+        <Field label="Your rating">
+          <div style={s.ratingRow}>
+            {[
+              ["😐", "Meh"],
+              ["😊", "Good"],
+              ["🔥", "Fire"],
+            ].map(([icon, label]) => (
+              <button
+                key={label}
                 style={{
-                  ...s.input,
-                  height: 90,
-                  resize: "none",
-                  lineHeight: 1.6,
+                  ...s.ratingBtn,
+                  ...(form.rating === label ? s.ratingBtnSel : {}),
                 }}
-                value={form.notes}
-                onChange={(e) => set("notes", e.target.value)}
-                placeholder="What did you ask for? Length, texture, details…"
-              />
-            </Field>
-            <Field label="Tags">
-              <ChipRow
-                multi
-                options={[
-                  "Summer",
-                  "Work",
-                  "Wedding",
-                  "Casual",
-                  "Special",
-                  "Everyday",
-                ]}
-                value={form.tags}
-                onChange={(v) => set("tags", v)}
-              />
-            </Field>
-
-            {errors.submit && (
-              <p style={{ color: "#e24b4a", fontSize: 13 }}>{errors.submit}</p>
-            )}
+                onClick={() => set("rating", label)}
+              >
+                <span style={{ fontSize: 18 }}>{icon}</span>
+                <span>{label}</span>
+              </button>
+            ))}
           </div>
+        </Field>
+
+        <Field label="Barber / Salon">
+          <AutocompleteInput
+            value={form.location}
+            onChange={(e) => set("location", e.target.value)}
+            placeholder="e.g. Juan's Barbershop"
+            suggestions={barberSuggestions}
+          />
+        </Field>
+
+        <Field label="Date of cut">
+          <input
+            style={s.input}
+            type="date"
+            value={form.date}
+            onChange={(e) => set("date", e.target.value)}
+          />
+        </Field>
+
+        <Field label="Price paid (₱)">
+          <input
+            style={s.input}
+            type="number"
+            value={form.price}
+            onChange={(e) => set("price", e.target.value)}
+            placeholder="0"
+          />
+        </Field>
+
+        <Field label="Photo">
+          <PhotoUpload
+            value={form.photo_url}
+            onChange={(url) => set("photo_url", url)}
+            userId={null}
+          />
+        </Field>
+
+        <Field label="Notes">
+          <textarea
+            style={{
+              ...s.input,
+              height: 90,
+              resize: "none",
+              lineHeight: 1.6,
+            }}
+            value={form.notes}
+            onChange={(e) => set("notes", e.target.value)}
+            placeholder="What did you ask for? Length, texture, details…"
+          />
+        </Field>
+
+        <Field label="Tags">
+          <ChipRow
+            multi
+            options={[
+              "Summer",
+              "Work",
+              "Wedding",
+              "Casual",
+              "Special",
+              "Everyday",
+            ]}
+            value={form.tags}
+            onChange={(v) => set("tags", v)}
+          />
+        </Field>
+
+        {errors.submit && (
+          <p style={{ color: "#e24b4a", fontSize: 13, marginTop: 12 }}>{errors.submit}</p>
         )}
       </div>
 
       {/* Bottom button */}
       <div style={s.bottomBar}>
-        <button style={s.btnBlack} disabled={loading} onClick={next}>
-          {loading
-            ? "Saving…"
-            : step === STEPS.length - 1
-              ? "Save haircut"
-              : "Continue"}
+        <button style={s.btnBlack} disabled={loading} onClick={handleSubmit}>
+          {loading ? "Saving…" : "Save haircut"}
           {!loading && <ArrowIcon />}
         </button>
       </div>
@@ -248,33 +236,70 @@ export default function AddScreen({ onSave }) {
   );
 }
 
-// Sub-components
-function StepHeader({ num, title, sub }) {
+function AutocompleteInput({ value, onChange, placeholder, suggestions, error }) {
+  const [show, setShow] = useState(false);
+
+  // filter suggestions based on input value
+  const filtered = suggestions.filter((s) =>
+    s.toLowerCase().includes((value || "").toLowerCase())
+  );
+
   return (
-    <div style={{ padding: "20px 0 24px" }}>
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 600,
-          color: "#bbb",
-          letterSpacing: "1.5px",
-          textTransform: "uppercase",
-          marginBottom: 4,
+    <div style={{ position: "relative" }}>
+      <input
+        style={{ ...s.input, ...(error ? s.inputErr : {}) }}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        onFocus={() => setShow(true)}
+        onBlur={() => {
+          // Delay closing so that click on suggestion can be registered
+          setTimeout(() => {
+            setShow(false);
+          }, 200);
         }}
-      >
-        Step {num} of 4
-      </div>
-      <div
-        style={{
-          fontSize: 22,
-          fontWeight: 600,
-          color: "#0a0a0a",
-          letterSpacing: "-0.5px",
-        }}
-      >
-        {title}
-      </div>
-      <div style={{ fontSize: 13, color: "#999", marginTop: 5 }}>{sub}</div>
+      />
+      {show && filtered.length > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 6px)",
+            left: 0,
+            right: 0,
+            background: "#ffffff",
+            border: "1.5px solid #ebebeb",
+            borderRadius: 13,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+            zIndex: 100,
+            maxHeight: 180,
+            overflowY: "auto",
+          }}
+        >
+          {filtered.map((item, index) => (
+            <div
+              key={item + index}
+              onMouseDown={() => {
+                // Use onMouseDown so it fires before onBlur
+                onChange({ target: { value: item } });
+                setShow(false);
+              }}
+              style={{
+                padding: "12px 15px",
+                fontSize: 14,
+                color: "#333",
+                cursor: "pointer",
+                borderBottom: index === filtered.length - 1 ? "none" : "1.5px solid #f5f5f5",
+                transition: "background 0.15s",
+                textAlign: "left",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "#f7f7f7")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+            >
+              {item}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -570,19 +595,6 @@ const s = {
     height: "100%",
     fontFamily: "sans-serif",
   },
-  progressTrack: {
-    height: 3,
-    background: "#f0f0f0",
-    margin: "0 22px",
-    borderRadius: 2,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    background: "#0a0a0a",
-    borderRadius: 2,
-    transition: "width 0.4s ease",
-  },
   body: { flex: 1, overflowY: "auto", padding: "0 22px 20px" },
   input: {
     width: "100%",
@@ -594,6 +606,7 @@ const s = {
     color: "#0a0a0a",
     fontFamily: "inherit",
     outline: "none",
+    boxSizing: "border-box",
   },
   inputErr: { borderColor: "#e24b4a" },
   ratingRow: { display: "flex", gap: 10 },
