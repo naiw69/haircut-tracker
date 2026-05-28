@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../supabaseClient";
 
-
 export default function AddScreen({ onSave }) {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -26,7 +25,7 @@ export default function AddScreen({ onSave }) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-
+        
         const { data, error } = await supabase
           .from("haircuts")
           .select("name, location")
@@ -45,8 +44,9 @@ export default function AddScreen({ onSave }) {
     fetchHistory();
   }, []);
 
-  const styleSuggestions = [...new Set([...history.names, ...DEFAULT_STYLES])];
-  const barberSuggestions = [...new Set([...history.locations, ...DEFAULT_BARBERS])];
+  const styleSuggestions = history.names;
+  const barberSuggestions = history.locations;
+
 
   const validate = () => {
     if (!form.name.trim()) {
