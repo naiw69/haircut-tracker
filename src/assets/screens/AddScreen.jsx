@@ -3,6 +3,40 @@ import { useState, useEffect } from "react";
 import { supabase } from "../../supabaseClient";
 
 export default function AddScreen({ onSave }) {
+  const [mode, setMode] = useState("personal"); // "personal" | "fast"
+
+  return (
+    <div style={s.container}>
+      {/* Mode Toggle */}
+      <div style={s.modeToggleWrap}>
+        <div style={s.modeToggle}>
+          <button
+            style={{ ...s.modeBtn, ...(mode === "personal" ? s.modeBtnActive : {}) }}
+            onClick={() => setMode("personal")}
+          >
+            Personal Log
+          </button>
+          <button
+            style={{ ...s.modeBtn, ...(mode === "fast" ? s.modeBtnActive : {}) }}
+            onClick={() => setMode("fast")}
+          >
+            ⚡ Fast Log
+          </button>
+        </div>
+      </div>
+
+      {mode === "personal" ? (
+        <PersonalLogForm onSave={onSave} />
+      ) : (
+        <FastLogForm onSave={onSave} />
+      )}
+    </div>
+  );
+}
+
+// ─── Personal Log ────────────────────────────────────────────────────────────
+
+function PersonalLogForm({ onSave }) {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [form, setForm] = useState({
@@ -25,12 +59,10 @@ export default function AddScreen({ onSave }) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-
         const { data, error } = await supabase
           .from("haircuts")
           .select("name, location")
           .eq("user_id", user.id);
-
         if (data && !error) {
           const names = [...new Set(data.map((item) => item.name).filter(Boolean))];
           const locations = [...new Set(data.map((item) => item.location).filter(Boolean))];
@@ -40,13 +72,8 @@ export default function AddScreen({ onSave }) {
         console.error("Error fetching haircut history:", err);
       }
     };
-
     fetchHistory();
   }, []);
-
-  const styleSuggestions = history.names;
-  const barberSuggestions = history.locations;
-
 
   const validate = () => {
     if (!form.name.trim()) {
@@ -59,11 +86,8 @@ export default function AddScreen({ onSave }) {
 
   const handleSubmit = async () => {
     if (!validate()) return;
-
     setLoading(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     const { error } = await supabase.from("haircuts").insert({
       user_id: user.id,
       name: form.name,
@@ -76,60 +100,41 @@ export default function AddScreen({ onSave }) {
       photo_url: form.photo_url,
     });
     setLoading(false);
-    if (error) {
-      setErrors({ submit: error.message });
-      return;
-    }
+    if (error) { setErrors({ submit: error.message }); return; }
     setSaved(true);
   };
 
   if (saved)
     return (
       <div style={s.successWrap}>
-        <div style={s.successCircle}>
-          <CheckIcon />
-        </div>
+        <div style={s.successCircle}><CheckIcon /></div>
         <h2 style={s.successTitle}>Haircut saved!</h2>
         <p style={s.successSub}>Your cut has been logged to your gallery.</p>
-        <button
-          style={s.btnBlack}
-          onClick={() => {
-            setSaved(false);
-            onSave?.();
-          }}
-        >
+        <button style={s.btnBlack} onClick={() => { setSaved(false); onSave?.(); }}>
           Back to gallery
         </button>
       </div>
     );
 
   return (
-    <div style={s.container}>
+    <>
       <div style={s.body}>
-
         <Field label="Style name" error={errors.name}>
           <AutocompleteInput
             value={form.name}
             onChange={(e) => set("name", e.target.value)}
             placeholder="e.g. Low fade with taper"
-            suggestions={styleSuggestions}
+            suggestions={history.names}
             error={errors.name}
           />
         </Field>
 
         <Field label="Your rating">
           <div style={s.ratingRow}>
-            {[
-              ["😐", "Meh"],
-              ["😊", "Good"],
-              ["🔥", "Fire"],
-            ].map(([icon, label]) => (
+            {[["😐", "Meh"], ["😊", "Good"], ["🔥", "Fire"]].map(([icon, label]) => (
               <button
                 key={label}
-                style={{
-                  ...s.ratingBtn,
-                  ...(form.rating === label ? s.ratingBtnSel : {}),
-                }}
+                style={{ ...s.ratingBtn, ...(form.rating === label ? s.ratingBtnSel : {}) }}
                 onClick={() => set("rating", label)}
               >
                 <span style={{ fontSize: 18 }}>{icon}</span>
@@ -144,7 +149,7 @@ export default function AddScreen({ onSave }) {
             value={form.location}
             onChange={(e) => set("location", e.target.value)}
             placeholder="e.g. Juan's Barbershop"
-            suggestions={barberSuggestions}
+            suggestions={history.locations}
           />
         </Field>
 
@@ -168,21 +173,12 @@ export default function AddScreen({ onSave }) {
         </Field>
 
         <Field label="Photo">
-          <PhotoUpload
-            value={form.photo_url}
-            onChange={(url) => set("photo_url", url)}
-            userId={null}
-          />
+          <PhotoUpload value={form.photo_url} onChange={(url) => set("photo_url", url)} userId={null} />
         </Field>
 
         <Field label="Notes">
           <textarea
-            style={{
-              ...s.input,
-              height: 90,
-              resize: "none",
-              lineHeight: 1.6,
-            }}
+            style={{ ...s.input, height: 90, resize: "none", lineHeight: 1.6 }}
             value={form.notes}
             onChange={(e) => set("notes", e.target.value)}
             placeholder="What did you ask for? Length, texture, details…"
@@ -192,14 +188,7 @@ export default function AddScreen({ onSave }) {
         <Field label="Tags">
           <ChipRow
             multi
-            options={[
-              "Summer",
-              "Work",
-              "Wedding",
-              "Casual",
-              "Special",
-              "Everyday",
-            ]}
+            options={["Summer", "Work", "Wedding", "Casual", "Special", "Everyday"]}
             value={form.tags}
             onChange={(v) => set("tags", v)}
           />
@@ -210,14 +199,86 @@ export default function AddScreen({ onSave }) {
         )}
       </div>
 
-      {/* Bottom button */}
       <div style={s.bottomBar}>
         <button style={s.btnBlack} disabled={loading} onClick={handleSubmit}>
           {loading ? "Saving…" : "Save haircut"}
           {!loading && <ArrowIcon />}
         </button>
       </div>
-    </div>
+    </>
+  );
+}
+
+// ─── Fast Log ─────────────────────────────────────────────────────────────────
+
+function FastLogForm({ onSave }) {
+  const [price, setPrice] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleFastLog = async () => {
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error: insertError } = await supabase.from("fast_log_haircuts").insert({
+        user_id: user.id,
+        price: parseFloat(price) || 0,
+        date: new Date().toISOString().split("T")[0],
+      });
+      if (insertError) { setError(insertError.message); return; }
+      setSuccess(true);
+      setPrice("");
+      setTimeout(() => {
+        setSuccess(false);
+      }, 3000);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <div style={s.body}>
+        <div style={s.fastLogCard}>
+          <div style={s.fastLogIcon}>✂️</div>
+          <p style={s.fastLogTitle}>Quick add a haircut</p>
+          <p style={s.fastLogSub}>No details needed — just tap the button. Optionally set a price first.</p>
+
+          <div style={s.fastLogRow}>
+            <div style={s.fastLogPriceWrap}>
+              <span style={s.fastLogCurrency}>₱</span>
+              <input
+                style={s.fastLogPriceInput}
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="0"
+              />
+            </div>
+            <button
+              style={{ ...s.btnBlack, ...s.fastLogBtn }}
+              disabled={loading}
+              onClick={handleFastLog}
+            >
+              {loading ? "Adding…" : "Add Haircut"}
+              {!loading && <ArrowIcon />}
+            </button>
+          </div>
+
+          {error && <p style={{ color: "#e24b4a", fontSize: 13, marginTop: 12 }}>{error}</p>}
+          {success && (
+            <p style={{ color: "#2e7d32", fontSize: 14, fontWeight: 600, marginTop: 14 }}>
+              ✓ Haircut logged successfully!
+            </p>
+          )}
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -579,6 +640,93 @@ const s = {
     flexDirection: "column",
     height: "100%",
     fontFamily: "sans-serif",
+  },
+  modeToggleWrap: {
+    padding: "14px 22px 10px",
+    background: "#fff",
+    borderBottom: "0.5px solid #f0f0f0",
+  },
+  modeToggle: {
+    display: "flex",
+    background: "#f3f3f3",
+    borderRadius: 12,
+    padding: 3,
+    gap: 3,
+  },
+  modeBtn: {
+    flex: 1,
+    padding: "9px 0",
+    borderRadius: 10,
+    border: "none",
+    background: "transparent",
+    fontSize: 13,
+    fontWeight: 600,
+    color: "#999",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    transition: "all 0.18s",
+  },
+  modeBtnActive: {
+    background: "#0a0a0a",
+    color: "#fff",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+  },
+  fastLogCard: {
+    marginTop: 24,
+    background: "#f7f7f7",
+    borderRadius: 20,
+    padding: "28px 20px 24px",
+    textAlign: "center",
+    border: "1.5px solid #ebebeb",
+  },
+  fastLogIcon: { fontSize: 40, marginBottom: 12 },
+  fastLogTitle: {
+    fontSize: 17,
+    fontWeight: 700,
+    color: "#0a0a0a",
+    marginBottom: 6,
+  },
+  fastLogSub: {
+    fontSize: 13,
+    color: "#aaa",
+    lineHeight: 1.6,
+    marginBottom: 24,
+  },
+  fastLogRow: {
+    display: "flex",
+    gap: 10,
+    alignItems: "stretch",
+  },
+  fastLogPriceWrap: {
+    display: "flex",
+    alignItems: "center",
+    background: "#fff",
+    border: "1.5px solid #ebebeb",
+    borderRadius: 13,
+    padding: "0 14px",
+    gap: 4,
+    flex: "0 0 110px",
+  },
+  fastLogCurrency: {
+    fontSize: 15,
+    color: "#888",
+    fontWeight: 600,
+  },
+  fastLogPriceInput: {
+    width: "100%",
+    border: "none",
+    background: "transparent",
+    fontSize: 15,
+    color: "#0a0a0a",
+    fontFamily: "inherit",
+    outline: "none",
+    padding: "13px 0",
+  },
+  fastLogBtn: {
+    flex: 1,
+    borderRadius: 13,
+    padding: "13px 16px",
+    fontSize: 14,
   },
   body: { flex: 1, overflowY: "auto", padding: "0 22px 20px" },
   input: {

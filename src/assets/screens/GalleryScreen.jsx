@@ -9,6 +9,7 @@ export default function GalleryScreen({ onAddNew }) {
   const [filter, setFilter] = useState("All");
   const [selected, setSelected] = useState(null);
   const [editing, setEditing] = useState(null); // holds the cut being edited
+  const [typeFilter, setTypeFilter] = useState("all"); // "all" | "personal" | "fast"
 
   const FILTERS = [
     "All",
@@ -32,13 +33,38 @@ export default function GalleryScreen({ onAddNew }) {
 
       if (!user) return; // Guard clause if no user is found
 
-      const { data, error } = await supabase
+      const { data: personalData, error: personalError } = await supabase
         .from("haircuts")
         .select("*")
         .eq("user_id", user.id)
         .order("date", { ascending: false });
 
-      if (!error) setCuts(data || []);
+      const { data: fastData, error: fastError } = await supabase
+        .from("fast_log_haircuts")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("date", { ascending: false });
+
+      if (personalError) throw personalError;
+      if (fastError) throw fastError;
+
+      const personalMapped = (personalData || []).map((c) => ({ ...c, type: "personal" }));
+      const fastMapped = (fastData || []).map((c) => ({
+        ...c,
+        type: "fast",
+        name: "⚡ Fast Cut",
+        rating: null,
+        location: "",
+        tags: [],
+        notes: "",
+        photo_url: null,
+      }));
+
+      const merged = [...personalMapped, ...fastMapped].sort(
+        (a, b) => new Date(b.date) - new Date(a.date)
+      );
+
+      setCuts(merged);
     } catch (err) {
       console.error("Error fetching cuts:", err);
     } finally {
@@ -51,25 +77,36 @@ export default function GalleryScreen({ onAddNew }) {
     fetchCuts();
   }, [fetchCuts]);
 
-  const deleteCut = async (id) => {
+  const deleteCut = async (cut) => {
     if (!window.confirm("Delete this haircut?")) return;
-    await supabase.from("haircuts").delete().eq("id", id);
-    setSelected(null);
-    fetchCuts();
+    const table = cut.type === "fast" ? "fast_log_haircuts" : "haircuts";
+    const { error } = await supabase.from(table).delete().eq("id", cut.id);
+    if (error) {
+      alert("Error deleting haircut: " + error.message);
+    } else {
+      setSelected(null);
+      fetchCuts();
+    }
   };
 
   const filtered = cuts.filter((c) => {
-    // 1. Filter by Name Keywords (Low, Mid, High, etc.)
+    // 1. Filter by Log Type ("all", "personal", "fast")
+    const matchType =
+      typeFilter === "all" ||
+      (typeFilter === "personal" && c.type === "personal") ||
+      (typeFilter === "fast" && c.type === "fast");
+
+    // 2. Filter by Name Keywords (Low, Mid, High, etc.)
     const matchFilter =
       filter === "All" || c.name.toLowerCase().includes(filter.toLowerCase());
 
-    // 2. Search by Name or Barber
+    // 3. Search by Name or Barber
     const matchSearch =
       !search ||
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.barber?.toLowerCase().includes(search.toLowerCase());
 
-    return matchFilter && matchSearch;
+    return matchType && matchFilter && matchSearch;
   });
 
   if (editing)
@@ -91,7 +128,7 @@ export default function GalleryScreen({ onAddNew }) {
       <DetailView
         cut={selected}
         onBack={() => setSelected(null)}
-        onDelete={() => deleteCut(selected.id)}
+        onDelete={() => deleteCut(selected)}
         onEdit={(cut) => setEditing(cut)} // ← new
       />
     );
@@ -99,7 +136,29 @@ export default function GalleryScreen({ onAddNew }) {
   // Gallery view
   return (
     <div style={s.container}>
-   
+      {/* Log Type Selector */}
+      <div style={s.typeToggleWrap}>
+        <div style={s.typeToggle}>
+          <button
+            style={{ ...s.typeBtn, ...(typeFilter === "all" ? s.typeBtnActive : {}) }}
+            onClick={() => setTypeFilter("all")}
+          >
+            All Cuts
+          </button>
+          <button
+            style={{ ...s.typeBtn, ...(typeFilter === "personal" ? s.typeBtnActive : {}) }}
+            onClick={() => setTypeFilter("personal")}
+          >
+            Personal Cuts
+          </button>
+          <button
+            style={{ ...s.typeBtn, ...(typeFilter === "fast" ? s.typeBtnActive : {}) }}
+            onClick={() => setTypeFilter("fast")}
+          >
+            ⚡ Fast Cuts
+          </button>
+        </div>
+      </div>
 
       {/* Search */}
       <div style={s.searchWrap}>
@@ -223,9 +282,11 @@ function DetailView({ cut, onBack, onDelete, onEdit }) {
           >
             <ShareIcon />
           </button>
-          <button style={s.actionBtn} onClick={() => onEdit(cut)}>
-            <EditIcon />
-          </button>
+          {cut.type !== "fast" && (
+            <button style={s.actionBtn} onClick={() => onEdit(cut)}>
+              <EditIcon />
+            </button>
+          )}
         </div>
       </div>
 
@@ -257,48 +318,56 @@ function DetailView({ cut, onBack, onDelete, onEdit }) {
               })}
             </p>
           </div>
-          <div style={s.ratingPill}>
-            {cut.rating === "Fire" ? "🔥" : cut.rating === "Good" ? "😊" : "😐"}{" "}
-            {cut.rating}
-          </div>
+          {cut.type !== "fast" && cut.rating && (
+            <div style={s.ratingPill}>
+              {cut.rating === "Fire" ? "🔥" : cut.rating === "Good" ? "😊" : "😐"}{" "}
+              {cut.rating}
+            </div>
+          )}
         </div>
 
-        <div
-          style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}
-        >
-          {(cut.tags || []).map((t) => (
-            <span key={t} style={s.dtag}>
-              {t}
-            </span>
-          ))}
-        </div>
+        {cut.type !== "fast" && cut.tags && cut.tags.length > 0 && (
+          <div
+            style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}
+          >
+            {cut.tags.map((t) => (
+              <span key={t} style={s.dtag}>
+                {t}
+              </span>
+            ))}
+          </div>
+        )}
 
         <div style={s.divider} />
 
         {[
-          ["Barber / Salon", cut.location || "—"],
+          cut.type !== "fast" && ["Barber / Salon", cut.location || "—"],
           ["Price paid", `₱${cut.price}`],
-        ].map(([label, val]) => (
+        ].filter(Boolean).map(([label, val]) => (
           <div key={label} style={s.detailRow}>
             <span style={s.detailLabel}>{label}</span>
             <span style={s.detailVal}>{val}</span>
           </div>
         ))}
 
-        <div style={s.divider} />
-        <div
-          style={{
-            fontSize: 12,
-            fontWeight: 600,
-            color: "#888",
-            letterSpacing: "0.8px",
-            textTransform: "uppercase",
-            marginBottom: 8,
-          }}
-        >
-          Notes
-        </div>
-        <div style={s.notesBox}>{cut.notes || "No notes added."}</div>
+        {cut.type !== "fast" && (
+          <>
+            <div style={s.divider} />
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                color: "#888",
+                letterSpacing: "0.8px",
+                textTransform: "uppercase",
+                marginBottom: 8,
+              }}
+            >
+              Notes
+            </div>
+            <div style={s.notesBox}>{cut.notes || "No notes added."}</div>
+          </>
+        )}
 
         <button style={s.deleteBtn} onClick={onDelete}>
           Delete haircut
@@ -605,6 +674,35 @@ const EditIcon = () => (
 
 const s = {
   container: { display: "flex", flexDirection: "column", height: "100%" },
+  typeToggleWrap: {
+    padding: "14px 20px 6px",
+    background: "#fff",
+  },
+  typeToggle: {
+    display: "flex",
+    background: "#f3f3f3",
+    borderRadius: 12,
+    padding: 3,
+    gap: 3,
+  },
+  typeBtn: {
+    flex: 1,
+    padding: "8px 0",
+    borderRadius: 10,
+    border: "none",
+    background: "transparent",
+    fontSize: 12,
+    fontWeight: 600,
+    color: "#999",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    transition: "all 0.18s",
+  },
+  typeBtnActive: {
+    background: "#0a0a0a",
+    color: "#fff",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+  },
   header: { padding: "16px 20px 0" },
   title: {
     fontSize: 22,

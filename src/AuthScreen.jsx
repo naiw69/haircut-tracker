@@ -78,7 +78,7 @@ export function AuthScreen() {
 
   return (
     <div style={styles.container}>
-       {/* Temporarily disabling the Signup Tab
+      {/* Temporarily disabling the Signup Tab
       <div style={styles.tabs}>
         
         <button
@@ -98,7 +98,7 @@ export function AuthScreen() {
       </div>
        */}
       <div>
-        <h2 style={styles.title}>Barsi</h2>
+        <h2 style={styles.title}>Follicle</h2>
       </div>
       {tab === "signup" && (
         <input
@@ -137,20 +137,20 @@ export function AuthScreen() {
             : "Create account"}
       </button>
 
-   {/*  <button style={styles.btnGoogle} onClick={handleGoogle}>
+      {/*  <button style={styles.btnGoogle} onClick={handleGoogle}>
         Continue with Google
       </button>
 */}
     </div>
   );
 }
-
+  
 const styles = {
   title: { textAlign: "center", fontSize: 32, marginBottom: 28 },
   container: {
     maxWidth: 390,
     margin: "0 auto",
-    padding: "40px 28px",
+    padding: "130px 28px",
     fontFamily: "sans-serif",
   },
   center: { textAlign: "center", padding: 40 },
@@ -187,6 +187,7 @@ const styles = {
   input: {
     display: "block",
     width: "100%",
+    boxSizing: "border-box",
     padding: "12px 14px",
     marginBottom: 14,
     background: "#f7f7f7",
@@ -198,6 +199,7 @@ const styles = {
   },
   btnMain: {
     width: "100%",
+    boxSizing: "border-box",
     background: "#0a0a0a",
     color: "#fff",
     border: "none",
@@ -207,10 +209,10 @@ const styles = {
     fontWeight: 600,
     cursor: "pointer",
     marginBottom: 14,
-    
   },
   btnGoogle: {
     width: "100%",
+    boxSizing: "border-box",
     background: "#fff",
     border: "1px solid #e0e0e0",
     borderRadius: 12,

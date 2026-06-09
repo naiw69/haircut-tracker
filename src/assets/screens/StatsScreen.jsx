@@ -27,6 +27,7 @@ export default function StatsScreen() {
   const [cuts, setCuts] = useState([]);
   const [period, setPeriod] = useState("Last 6 months");
   const [loading, setLoading] = useState(true);
+  const [typeFilter, setTypeFilter] = useState("all"); // "all" | "personal" | "fast"
 
   const fetchCuts = useCallback(async () => {
     setLoading(true);
@@ -37,15 +38,38 @@ export default function StatsScreen() {
 
       if (!user) return; // Guard clause if user isn't logged in
 
-      const { data, error } = await supabase
+      const { data: personalData, error: personalError } = await supabase
         .from("haircuts")
         .select("*")
         .eq("user_id", user.id)
         .order("date", { ascending: false });
 
-      if (error) throw error;
+      const { data: fastData, error: fastError } = await supabase
+        .from("fast_log_haircuts")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("date", { ascending: false });
 
-      setCuts(data || []);
+      if (personalError) throw personalError;
+      if (fastError) throw fastError;
+
+      const personalMapped = (personalData || []).map((c) => ({ ...c, type: "personal" }));
+      const fastMapped = (fastData || []).map((c) => ({
+        ...c,
+        type: "fast",
+        name: "⚡ Fast Cut",
+        rating: null,
+        location: "",
+        tags: [],
+        notes: "",
+        photo_url: null,
+      }));
+
+      const merged = [...personalMapped, ...fastMapped].sort(
+        (a, b) => new Date(b.date) - new Date(a.date)
+      );
+
+      setCuts(merged);
     } catch (error) {
       console.error("Error fetching cuts:", error.message);
     } finally {
@@ -81,10 +105,18 @@ export default function StatsScreen() {
     return null;
   })();
 
-  const filteredCuts =
-    period === "All time"
-      ? cuts
-      : cuts.filter((c) => new Date(c.date) >= periodStart);
+  const filteredCuts = cuts
+    .filter((c) => {
+      const matchType =
+        typeFilter === "all" ||
+        (typeFilter === "personal" && c.type === "personal") ||
+        (typeFilter === "fast" && c.type === "fast");
+      return matchType;
+    })
+    .filter((c) => {
+      if (period === "All time") return true;
+      return new Date(c.date) >= periodStart;
+    });
 
   const totalCuts = filteredCuts.length;
   const totalSpent = filteredCuts.reduce(
@@ -264,6 +296,30 @@ export default function StatsScreen() {
 
   return (
     <div style={s.container}>
+      {/* Log Type Selector */}
+      <div style={s.typeToggleWrap}>
+        <div style={s.typeToggle}>
+          <button
+            style={{ ...s.typeBtn, ...(typeFilter === "all" ? s.typeBtnActive : {}) }}
+            onClick={() => setTypeFilter("all")}
+          >
+            All Cuts
+          </button>
+          <button
+            style={{ ...s.typeBtn, ...(typeFilter === "personal" ? s.typeBtnActive : {}) }}
+            onClick={() => setTypeFilter("personal")}
+          >
+            Personal Cuts
+          </button>
+          <button
+            style={{ ...s.typeBtn, ...(typeFilter === "fast" ? s.typeBtnActive : {}) }}
+            onClick={() => setTypeFilter("fast")}
+          >
+            ⚡ Fast Cuts
+          </button>
+        </div>
+      </div>
+
       {/* Period selector */}
       <div style={s.periodRow}>
         {PERIODS.map((p) => (
@@ -390,15 +446,19 @@ export default function StatsScreen() {
                     day: "numeric",
                     year: "numeric",
                   })}
-                  {" · "}
-                  {c.barber || "—"}
-                  {" · "}
-                  {c.rating === "Fire"
-                    ? "🔥"
-                    : c.rating === "Good"
-                      ? "😊"
-                      : "😐"}{" "}
-                  {c.rating}
+                  {c.type !== "fast" && (
+                    <>
+                      {" · "}
+                      {c.barber || "—"}
+                      {" · "}
+                      {c.rating === "Fire"
+                        ? "🔥"
+                        : c.rating === "Good"
+                          ? "😊"
+                          : "😐"}{" "}
+                      {c.rating}
+                    </>
+                  )}
                 </div>
                 <div style={s.tlPrice}>₱{c.price}</div>
               </div>
@@ -572,6 +632,35 @@ function LegItem({ color, label }) {
 
 const s = {
   container: { overflowY: "auto", paddingBottom: 32, fontFamily: "sans-serif" },
+  typeToggleWrap: {
+    padding: "14px 20px 6px",
+    background: "#fff",
+  },
+  typeToggle: {
+    display: "flex",
+    background: "#f3f3f3",
+    borderRadius: 12,
+    padding: 3,
+    gap: 3,
+  },
+  typeBtn: {
+    flex: 1,
+    padding: "8px 0",
+    borderRadius: 10,
+    border: "none",
+    background: "transparent",
+    fontSize: 12,
+    fontWeight: 600,
+    color: "#999",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    transition: "all 0.18s",
+  },
+  typeBtnActive: {
+    background: "#0a0a0a",
+    color: "#fff",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+  },
   empty: {
     textAlign: "center",
     color: "#bbb",
