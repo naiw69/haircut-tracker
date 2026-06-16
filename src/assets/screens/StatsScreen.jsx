@@ -38,38 +38,29 @@ export default function StatsScreen() {
 
       if (!user) return; // Guard clause if user isn't logged in
 
-      const { data: personalData, error: personalError } = await supabase
+      const { data, error } = await supabase
         .from("haircuts")
         .select("*")
         .eq("user_id", user.id)
         .order("date", { ascending: false });
 
-      const { data: fastData, error: fastError } = await supabase
-        .from("fast_log_haircuts")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("date", { ascending: false });
+      if (error) throw error;
 
-      if (personalError) throw personalError;
-      if (fastError) throw fastError;
+      const mapped = (data || []).map((c) => {
+        const isFast = !c.name || c.name === "⚡ Fast Cut";
+        return {
+          ...c,
+          type: isFast ? "fast" : "personal",
+          name: c.name || "⚡ Fast Cut",
+          rating: c.rating || null,
+          location: c.location || "",
+          tags: c.tags || [],
+          notes: c.notes || "",
+          photo_url: c.photo_url || null,
+        };
+      });
 
-      const personalMapped = (personalData || []).map((c) => ({ ...c, type: "personal" }));
-      const fastMapped = (fastData || []).map((c) => ({
-        ...c,
-        type: "fast",
-        name: "⚡ Fast Cut",
-        rating: null,
-        location: "",
-        tags: [],
-        notes: "",
-        photo_url: null,
-      }));
-
-      const merged = [...personalMapped, ...fastMapped].sort(
-        (a, b) => new Date(b.date) - new Date(a.date)
-      );
-
-      setCuts(merged);
+      setCuts(mapped);
     } catch (error) {
       console.error("Error fetching cuts:", error.message);
     } finally {

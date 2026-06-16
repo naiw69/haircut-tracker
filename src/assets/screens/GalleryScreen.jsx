@@ -33,38 +33,29 @@ export default function GalleryScreen({ onAddNew }) {
 
       if (!user) return; // Guard clause if no user is found
 
-      const { data: personalData, error: personalError } = await supabase
+      const { data, error } = await supabase
         .from("haircuts")
         .select("*")
         .eq("user_id", user.id)
         .order("date", { ascending: false });
 
-      const { data: fastData, error: fastError } = await supabase
-        .from("fast_log_haircuts")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("date", { ascending: false });
+      if (error) throw error;
 
-      if (personalError) throw personalError;
-      if (fastError) throw fastError;
+      const mapped = (data || []).map((c) => {
+        const isFast = !c.name || c.name === "⚡ Fast Cut";
+        return {
+          ...c,
+          type: isFast ? "fast" : "personal",
+          name: c.name || "⚡ Fast Cut",
+          rating: c.rating || null,
+          location: c.location || "",
+          tags: c.tags || [],
+          notes: c.notes || "",
+          photo_url: c.photo_url || null,
+        };
+      });
 
-      const personalMapped = (personalData || []).map((c) => ({ ...c, type: "personal" }));
-      const fastMapped = (fastData || []).map((c) => ({
-        ...c,
-        type: "fast",
-        name: "⚡ Fast Cut",
-        rating: null,
-        location: "",
-        tags: [],
-        notes: "",
-        photo_url: null,
-      }));
-
-      const merged = [...personalMapped, ...fastMapped].sort(
-        (a, b) => new Date(b.date) - new Date(a.date)
-      );
-
-      setCuts(merged);
+      setCuts(mapped);
     } catch (err) {
       console.error("Error fetching cuts:", err);
     } finally {
@@ -79,8 +70,7 @@ export default function GalleryScreen({ onAddNew }) {
 
   const deleteCut = async (cut) => {
     if (!window.confirm("Delete this haircut?")) return;
-    const table = cut.type === "fast" ? "fast_log_haircuts" : "haircuts";
-    const { error } = await supabase.from(table).delete().eq("id", cut.id);
+    const { error } = await supabase.from("haircuts").delete().eq("id", cut.id);
     if (error) {
       alert("Error deleting haircut: " + error.message);
     } else {
@@ -203,6 +193,43 @@ export default function GalleryScreen({ onAddNew }) {
       <div style={s.gridWrap}>
         {loading ? (
           <div style={s.empty}>Loading…</div>
+        ) : typeFilter === "fast" ? (
+          <div style={s.tableWrap}>
+            <table style={s.table}>
+              <thead>
+                <tr>
+                  <th style={s.th}>Date</th>
+                  <th style={s.th}>Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((cut) => (
+                  <tr
+                    key={cut.id}
+                    style={s.tr}
+                    onClick={() => setSelected(cut)}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#fafafa")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+                  >
+                    <td style={s.td}>
+                      {new Date(cut.date).toLocaleDateString("en-PH", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </td>
+                    <td style={{ ...s.td, fontFamily: "monospace", fontWeight: 600 }}>₱{cut.price}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={{ ...s.addCard, width: "100%", height: 50, marginTop: 12, display: "flex", flexDirection: "row", gap: 8 }} onClick={onAddNew}>
+              <PlusIcon />
+              <span style={{ fontSize: 12, color: "#ccc", fontWeight: 500 }}>
+                Add new
+              </span>
+            </div>
+          </div>
         ) : (
           <div style={s.grid}>
             {filtered.map((cut) => (
@@ -674,6 +701,41 @@ const EditIcon = () => (
 
 const s = {
   container: { display: "flex", flexDirection: "column", height: "100%" },
+  tableWrap: {
+    background: "#fff",
+    borderRadius: 16,
+    border: "1.5px solid #ebebeb",
+    overflow: "hidden",
+    boxShadow: "0 4px 12px rgba(0,0,0,0.02)",
+    marginBottom: 20,
+    boxSizing: "border-box",
+  },
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+    textAlign: "left",
+  },
+  th: {
+    padding: "14px 18px",
+    background: "#fafafa",
+    borderBottom: "1.5px solid #ebebeb",
+    color: "#888",
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: "0.8px",
+    textTransform: "uppercase",
+  },
+  td: {
+    padding: "16px 18px",
+    borderBottom: "1px solid #f0f0f0",
+    color: "#0a0a0a",
+    fontSize: 14,
+    fontWeight: 500,
+  },
+  tr: {
+    cursor: "pointer",
+    transition: "background 0.15s",
+  },
   typeToggleWrap: {
     padding: "14px 20px 6px",
     background: "#fff",

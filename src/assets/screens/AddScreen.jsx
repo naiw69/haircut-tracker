@@ -4,6 +4,19 @@ import { supabase } from "../../supabaseClient";
 
 export default function AddScreen({ onSave }) {
   const [mode, setMode] = useState("personal"); // "personal" | "fast"
+  const [priceModal, setPriceModal] = useState({
+    open: false,
+    value: "",
+    onSelect: null,
+  });
+
+  const openPriceModal = (currentVal, onSelect) => {
+    setPriceModal({
+      open: true,
+      value: currentVal || "",
+      onSelect,
+    });
+  };
 
   return (
     <div style={s.container}>
@@ -26,9 +39,20 @@ export default function AddScreen({ onSave }) {
       </div>
 
       {mode === "personal" ? (
-        <PersonalLogForm onSave={onSave} />
+        <PersonalLogForm onSave={onSave} onOpenPriceModal={openPriceModal} />
       ) : (
-        <FastLogForm onSave={onSave} />
+        <FastLogForm onSave={onSave} onOpenPriceModal={openPriceModal} />
+      )}
+
+      {priceModal.open && (
+        <PriceModal
+          value={priceModal.value}
+          onClose={() => setPriceModal({ open: false, value: "", onSelect: null })}
+          onSelect={(val) => {
+            priceModal.onSelect(val);
+            setPriceModal({ open: false, value: "", onSelect: null });
+          }}
+        />
       )}
     </div>
   );
@@ -36,7 +60,7 @@ export default function AddScreen({ onSave }) {
 
 // ─── Personal Log ────────────────────────────────────────────────────────────
 
-function PersonalLogForm({ onSave }) {
+function PersonalLogForm({ onSave, onOpenPriceModal }) {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
   const [form, setForm] = useState({
@@ -164,11 +188,12 @@ function PersonalLogForm({ onSave }) {
 
         <Field label="Price paid (₱)">
           <input
-            style={s.input}
-            type="number"
-            value={form.price}
-            onChange={(e) => set("price", e.target.value)}
-            placeholder="0"
+            style={{ ...s.input, cursor: "pointer" }}
+            type="text"
+            readOnly
+            value={form.price ? `₱${form.price}` : "₱0"}
+            onClick={() => onOpenPriceModal(form.price, (newPrice) => set("price", newPrice))}
+            placeholder="Tap to set price"
           />
         </Field>
 
@@ -211,7 +236,7 @@ function PersonalLogForm({ onSave }) {
 
 // ─── Fast Log ─────────────────────────────────────────────────────────────────
 
-function FastLogForm({ onSave }) {
+function FastLogForm({ onSave, onOpenPriceModal }) {
   const [price, setPrice] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -223,10 +248,16 @@ function FastLogForm({ onSave }) {
     setSuccess(false);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const { error: insertError } = await supabase.from("fast_log_haircuts").insert({
+      const { error: insertError } = await supabase.from("haircuts").insert({
         user_id: user.id,
         price: parseFloat(price) || 0,
         date: new Date().toISOString().split("T")[0],
+        name: "⚡ Fast Cut",
+        rating: null,
+        location: "",
+        notes: "",
+        tags: [],
+        photo_url: null,
       });
       if (insertError) { setError(insertError.message); return; }
       setSuccess(true);
@@ -250,13 +281,13 @@ function FastLogForm({ onSave }) {
           <p style={s.fastLogSub}>No details needed — just tap the button. Optionally set a price first.</p>
 
           <div style={s.fastLogRow}>
-            <div style={s.fastLogPriceWrap}>
+            <div style={{ ...s.fastLogPriceWrap, cursor: "pointer" }} onClick={() => onOpenPriceModal(price, (newPrice) => setPrice(newPrice))}>
               <span style={s.fastLogCurrency}>₱</span>
               <input
-                style={s.fastLogPriceInput}
-                type="number"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
+                style={{ ...s.fastLogPriceInput, cursor: "pointer" }}
+                type="text"
+                readOnly
+                value={price || "0"}
                 placeholder="0"
               />
             </div>
@@ -812,4 +843,148 @@ const s = {
     marginBottom: 8,
   },
   successSub: { fontSize: 14, color: "#999", lineHeight: 1.6, maxWidth: 220 },
+};
+
+function PriceModal({ value, onClose, onSelect }) {
+  const [customVal, setCustomVal] = useState(value || "");
+  const presets = [50, 80, 100, 150, 200, 250, 300, 350, 400];
+
+  const handleDone = () => {
+    onSelect(customVal);
+  };
+
+  return (
+    <>
+      <div style={m.backdrop} onClick={onClose} />
+      <div style={m.sheet}>
+        <div style={m.handle} />
+        <h3 style={m.title}>Select Price</h3>
+        
+        {/* 3x3 Grid of Presets */}
+        <div style={m.grid}>
+          {presets.map((p) => {
+            const isSelected = Number(customVal) === p;
+            return (
+              <button
+                key={p}
+                onClick={() => setCustomVal(p.toString())}
+                style={{
+                  ...m.presetBtn,
+                  ...(isSelected ? m.presetBtnActive : {})
+                }}
+              >
+                ₱{p}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Custom Price Input */}
+        <div style={{ marginTop: 20 }}>
+          <p style={m.fieldLabel}>Or enter custom price (₱)</p>
+          <input
+            style={m.input}
+            type="number"
+            value={customVal}
+            onChange={(e) => setCustomVal(e.target.value)}
+            placeholder="Enter custom amount"
+          />
+        </div>
+
+        <button style={m.saveBtn} onClick={handleDone}>
+          Done
+        </button>
+      </div>
+    </>
+  );
+}
+
+const m = {
+  backdrop: {
+    position: "absolute",
+    inset: 0,
+    background: "rgba(0,0,0,0.35)",
+    zIndex: 1000,
+  },
+  sheet: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    background: "#fff",
+    borderRadius: "24px 24px 0 0",
+    padding: "16px 24px 32px",
+    zIndex: 1001,
+    boxShadow: "0 -8px 32px rgba(0,0,0,0.08)",
+    boxSizing: "border-box",
+  },
+  handle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    background: "#eee",
+    margin: "0 auto 16px",
+  },
+  title: {
+    margin: "0 0 16px",
+    fontSize: 16,
+    fontWeight: 600,
+    color: "#0a0a0a",
+    textAlign: "center",
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
+    gap: 10,
+  },
+  presetBtn: {
+    padding: "12px 0",
+    borderRadius: 12,
+    border: "1.5px solid #e8e8e8",
+    background: "#fff",
+    fontSize: 14,
+    fontWeight: 600,
+    color: "#555",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    transition: "all 0.15s",
+  },
+  presetBtnActive: {
+    borderColor: "#0a0a0a",
+    background: "#0a0a0a",
+    color: "#fff",
+  },
+  fieldLabel: {
+    margin: "0 0 8px",
+    fontSize: 12,
+    fontWeight: 600,
+    color: "#888",
+    letterSpacing: "0.8px",
+    textTransform: "uppercase",
+  },
+  input: {
+    width: "100%",
+    padding: "13px 15px",
+    borderRadius: 13,
+    border: "1.5px solid #ebebeb",
+    fontSize: 15,
+    color: "#0a0a0a",
+    fontFamily: "inherit",
+    outline: "none",
+    boxSizing: "border-box",
+    background: "#f7f7f7",
+  },
+  saveBtn: {
+    width: "100%",
+    padding: 14,
+    background: "#0a0a0a",
+    color: "#fff",
+    border: "none",
+    borderRadius: 14,
+    fontSize: 15,
+    fontWeight: 600,
+    cursor: "pointer",
+    marginTop: 18,
+    fontFamily: "inherit",
+  },
 };
