@@ -9,7 +9,8 @@ export default function GalleryScreen({ onAddNew }) {
   const [filter, setFilter] = useState("All");
   const [selected, setSelected] = useState(null);
   const [editing, setEditing] = useState(null); // holds the cut being edited
-  const [typeFilter, setTypeFilter] = useState("all"); // "all" | "personal" | "fast"
+  const [typeFilter, setTypeFilter] = useState("personal"); // "all" | "personal" | "fast"
+  const [sortOrder, setSortOrder] = useState("newest"); // "newest" | "oldest"
 
   const FILTERS = [
     "All",
@@ -99,6 +100,12 @@ export default function GalleryScreen({ onAddNew }) {
     return matchType && matchFilter && matchSearch;
   });
 
+  const sortedAndFiltered = [...filtered].sort((a, b) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
+  });
+
   if (editing)
     return (
       <EditView
@@ -184,9 +191,19 @@ export default function GalleryScreen({ onAddNew }) {
       {/* Sort row */}
       <div style={s.sortRow}>
         <span style={s.countText}>
-          {filtered.length} cut{filtered.length !== 1 ? "s" : ""}
+          {sortedAndFiltered.length} cut{sortedAndFiltered.length !== 1 ? "s" : ""}
         </span>
-        <span style={s.sortText}>Newest first</span>
+        <div style={s.sortSelectWrap}>
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value)}
+            style={s.sortSelect}
+          >
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+          </select>
+          <ChevronDown />
+        </div>
       </div>
 
       {/* Grid */}
@@ -203,7 +220,7 @@ export default function GalleryScreen({ onAddNew }) {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((cut) => (
+                {sortedAndFiltered.map((cut) => (
                   <tr
                     key={cut.id}
                     style={s.tr}
@@ -232,7 +249,7 @@ export default function GalleryScreen({ onAddNew }) {
           </div>
         ) : (
           <div style={s.grid}>
-            {filtered.map((cut) => (
+            {sortedAndFiltered.map((cut) => (
               <div key={cut.id} style={s.card} onClick={() => setSelected(cut)}>
                 <div
                   style={{
@@ -271,7 +288,7 @@ export default function GalleryScreen({ onAddNew }) {
             </div>
           </div>
         )}
-        {!loading && filtered.length === 0 && (
+        {!loading && sortedAndFiltered.length === 0 && (
           <div style={s.empty}>No cuts match your search.</div>
         )}
       </div>
@@ -699,6 +716,21 @@ const EditIcon = () => (
   </svg>
 );
 
+const ChevronDown = ({ color = "#666" }) => (
+  <svg
+    width="12"
+    height="12"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
 const s = {
   container: { display: "flex", flexDirection: "column", height: "100%" },
   tableWrap: {
@@ -826,7 +858,27 @@ const s = {
     padding: "12px 20px 8px",
   },
   countText: { fontSize: 13, color: "#999" },
-  sortText: { fontSize: 13, color: "#666", fontWeight: 500 },
+  sortSelectWrap: {
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+    cursor: "pointer",
+  },
+  sortSelect: {
+    fontSize: 13,
+    color: "#666",
+    fontWeight: 500,
+    border: "none",
+    background: "transparent",
+    outline: "none",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    appearance: "none",
+    WebkitAppearance: "none",
+    MozAppearance: "none",
+    padding: 0,
+    margin: 0,
+  },
   gridWrap: { flex: 1, overflowY: "auto", padding: "0 14px 16px" },
   grid: { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 },
   card: {

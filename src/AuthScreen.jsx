@@ -3,6 +3,9 @@ import { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient"; // your supabase client
 import HomePage from "./Home";
 
+import logo from "../public/logo.png";
+
+
 export function AuthScreen() {
   const [tab, setTab] = useState("login");
   const [name, setName] = useState("");
@@ -77,10 +80,15 @@ export function AuthScreen() {
   }
 
   return (
+
+
     <div style={styles.container}>
-      {/* Temporarily disabling the Signup Tab
+
+      <div>
+        <img style={{ maxWidth: 150, maxHeight: 150, display: "block", margin: "auto", paddingBottom: "48px" }} src={logo} alt="Logo" />
+      </div>
+
       <div style={styles.tabs}>
-        
         <button
           style={tab === "login" ? styles.tabActive : styles.tab}
           onClick={() => setTab("login")}
@@ -88,7 +96,7 @@ export function AuthScreen() {
           Log in
         </button>
 
-       
+
         <button
           style={tab === "signup" ? styles.tabActive : styles.tab}
           onClick={() => setTab("signup")}
@@ -96,10 +104,8 @@ export function AuthScreen() {
           Sign up
         </button>
       </div>
-       */}
-      <div>
-        <h2 style={styles.title}>Follicle</h2>
-      </div>
+
+
       {tab === "signup" && (
         <input
           style={styles.input}
@@ -144,7 +150,7 @@ export function AuthScreen() {
     </div>
   );
 }
-  
+
 const styles = {
   title: { textAlign: "center", fontSize: 32, marginBottom: 28 },
   container: {
