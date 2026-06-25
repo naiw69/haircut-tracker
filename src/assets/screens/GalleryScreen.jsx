@@ -879,7 +879,7 @@ const s = {
     padding: 0,
     margin: 0,
   },
-  gridWrap: { flex: 1, overflowY: "auto", padding: "0 14px 16px" },
+  gridWrap: { flex: 1, overflowY: "auto", padding: "0 14px 100px" },
   grid: { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10 },
   card: {
     borderRadius: 18,

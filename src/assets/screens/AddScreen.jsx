@@ -796,7 +796,7 @@ const s = {
     color: "#fff",
   },
   bottomBar: {
-    padding: "16px 22px 24px",
+    padding: "16px 22px 100px",
     background: "#fff",
     borderTop: "0.5px solid #f0f0f0",
   },

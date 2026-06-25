@@ -622,7 +622,7 @@ function LegItem({ color, label }) {
 }
 
 const s = {
-  container: { overflowY: "auto", paddingBottom: 32, fontFamily: "sans-serif" },
+  container: { overflowY: "auto", paddingBottom: 100, fontFamily: "sans-serif" },
   typeToggleWrap: {
     padding: "14px 20px 6px",
     background: "#fff",

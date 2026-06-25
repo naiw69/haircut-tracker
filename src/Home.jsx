@@ -49,20 +49,17 @@ export default function HomePage() {
       <nav style={s.tabBar}>
         <TabBtn
           icon={<GridIcon />}
-          label="Gallery"
           active={tab === "gallery"}
           onClick={() => setTab("gallery")}
         />
         <TabBtn
           icon={<PlusIcon />}
-          label="New"
           active={tab === "add"}
           onClick={() => setTab("add")}
           isAdd
         />
         <TabBtn
           icon={<BarIcon />}
-          label="Stats"
           active={tab === "data"}
           onClick={() => setTab("data")}
         />
@@ -250,9 +247,11 @@ function TabBtn({ icon, label, active, onClick, isAdd }) {
       <span style={{ display: "flex", color: isAdd ? "#fff" : active ? "#0a0a0a" : "#bbb" }}>
         {icon}
       </span>
-      <span style={{ fontSize: 11, fontWeight: 500, color: isAdd ? "#fff" : active ? "#0a0a0a" : "#aaa" }}>
-        {label}
-      </span>
+      {label && (
+        <span style={{ fontSize: 11, fontWeight: 500, color: isAdd ? "#fff" : active ? "#0a0a0a" : "#aaa" }}>
+          {label}
+        </span>
+      )}
     </button>
   );
 }
@@ -362,28 +361,41 @@ const s = {
   },
   screen: { flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch" },
   tabBar: {
-    height: 72,
-    borderTop: "0.5px solid #e8e8e8",
+    position: "absolute",
+    bottom: 24,
+    left: 24,
+    right: 24,
+    height: 64,
+    borderRadius: 32,
+    border: "1px solid rgba(0, 0, 0, 0.05)",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-around",
-    padding: "0 8px 10px",
-    background: "#fff",
-    flexShrink: 0,
+    padding: "0 16px",
+    background: "rgba(255, 255, 255, 0.75)",
+    backdropFilter: "blur(20px)",
+    WebkitBackdropFilter: "blur(20px)",
+    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.08)",
+    zIndex: 5,
   },
   tabBtn: {
     display: "flex",
-    flexDirection: "column",
     alignItems: "center",
-    gap: 4,
+    justifyContent: "center",
     border: "none",
     background: "none",
     cursor: "pointer",
-    padding: "8px 16px",
-    borderRadius: 12,
+    padding: "10px 16px",
+    borderRadius: 20,
+    transition: "background 0.2s, transform 0.1s",
   },
-  tabBtnActive: { background: "#f3f3f3" },
-  tabAdd: { background: "#0a0a0a", borderRadius: 20, padding: "10px 20px" },
+  tabBtnActive: { background: "none" },
+  tabAdd: {
+    background: "#0a0a0a",
+    borderRadius: 20,
+    padding: "10px 20px",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+  },
 };
 
 const m = {
