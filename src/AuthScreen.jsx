@@ -15,11 +15,13 @@ export function AuthScreen() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [user, setUser] = useState(null);
+  const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
     // Check if user is already logged in
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
+      setInitializing(false);
     });
 
     // Listen for auth state changes
@@ -27,6 +29,7 @@ export function AuthScreen() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      setInitializing(false);
     });
 
     return () => subscription.unsubscribe();
@@ -62,6 +65,17 @@ export function AuthScreen() {
       options: { redirectTo: window.location.origin },
     });
   };
+
+  if (initializing) {
+    return (
+      <div style={styles.loadingContainer}>
+        <div style={styles.loadingContent}>
+          <img style={styles.loadingLogo} src={logo} alt="Logo" />
+          <div style={styles.spinner}></div>
+        </div>
+      </div>
+    );
+  }
 
   if (user) {
     return <HomePage />;
@@ -227,4 +241,48 @@ const styles = {
     cursor: "pointer",
   },
   error: { color: "#d32f2f", fontSize: 13, marginBottom: 12 },
+  loadingContainer: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "100vh",
+    width: "100vw",
+    background: "#ffffff",
+    fontFamily: "sans-serif",
+  },
+  loadingContent: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "24px",
+  },
+  loadingLogo: {
+    maxWidth: 100,
+    maxHeight: 100,
+    animation: "pulse 2s infinite ease-in-out",
+  },
+  spinner: {
+    width: "28px",
+    height: "28px",
+    border: "3px solid #f3f3f3",
+    borderTop: "3px solid #0a0a0a",
+    borderRadius: "50%",
+    animation: "spin 0.8s linear infinite",
+  },
 };
+
+// Inject auth screen animation styles
+if (typeof document !== "undefined" && !document.getElementById("auth-screen-styles")) {
+  const style = document.createElement("style");
+  style.id = "auth-screen-styles";
+  style.textContent = `
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(0.95); opacity: 0.8; }
+    }
+  `;
+  document.head.appendChild(style);
+}
