@@ -348,13 +348,13 @@ function DetailView({ cut, onBack, onDelete, onEdit }) {
               style={{
                 fontSize: 22,
                 fontWeight: 600,
-                color: "#0a0a0a",
+                color: "var(--text-primary)",
                 letterSpacing: "-0.5px",
               }}
             >
               {cut.name}
             </h2>
-            <p style={{ fontSize: 13, color: "#999", marginTop: 3 }}>
+            <p style={{ fontSize: 13, color: "var(--text-tertiary)", marginTop: 3 }}>
               {new Date(cut.date).toLocaleDateString("en-PH", {
                 year: "numeric",
                 month: "long",
@@ -489,8 +489,8 @@ function EditView({ cut, onBack, onSaved }) {
     border: "1.5px solid #e8e8e8",
     fontSize: 14,
     fontFamily: "inherit",
-    color: "#0a0a0a",
-    background: "#fafafa",
+    color: "var(--text-primary)",
+    background: "var(--bg-tertiary)",
     outline: "none",
     boxSizing: "border-box",
   };
@@ -498,7 +498,7 @@ function EditView({ cut, onBack, onSaved }) {
   const labelStyle = {
     fontSize: 12,
     fontWeight: 600,
-    color: "#888",
+    color: "var(--text-tertiary)",
     letterSpacing: "0.8px",
     textTransform: "uppercase",
     marginBottom: 6,
@@ -514,17 +514,17 @@ function EditView({ cut, onBack, onSaved }) {
           display: "flex",
           alignItems: "center",
           gap: 12,
-          borderBottom: "0.5px solid #ececec",
+          borderBottom: "0.5px solid var(--border-light)",
         }}
       >
         <button
-          style={{ ...s.actionBtn, background: "#f3f3f3" }}
+          style={{ ...s.actionBtn, background: "var(--bg-secondary)" }}
           onClick={onBack}
         >
           <ChevronLeft />
         </button>
         <h2
-          style={{ fontSize: 17, fontWeight: 600, color: "#0a0a0a", flex: 1 }}
+          style={{ fontSize: 17, fontWeight: 600, color: "var(--text-primary)", flex: 1 }}
         >
           Edit Haircut
         </h2>
@@ -534,8 +534,8 @@ function EditView({ cut, onBack, onSaved }) {
           style={{
             padding: "8px 18px",
             borderRadius: 20,
-            background: "#0a0a0a",
-            color: "#fff",
+            background: "var(--btn-primary-bg)",
+            color: "var(--btn-primary-text)",
             fontSize: 14,
             fontWeight: 600,
             border: "none",
@@ -734,9 +734,9 @@ const ChevronDown = ({ color = "#666" }) => (
 const s = {
   container: { display: "flex", flexDirection: "column", height: "100%" },
   tableWrap: {
-    background: "#fff",
+    background: "var(--bg-primary)",
     borderRadius: 16,
-    border: "1.5px solid #ebebeb",
+    border: "1.5px solid var(--border-medium)",
     overflow: "hidden",
     boxShadow: "0 4px 12px rgba(0,0,0,0.02)",
     marginBottom: 20,
@@ -749,9 +749,9 @@ const s = {
   },
   th: {
     padding: "14px 18px",
-    background: "#fafafa",
-    borderBottom: "1.5px solid #ebebeb",
-    color: "#888",
+    background: "var(--bg-tertiary)",
+    borderBottom: "1.5px solid var(--border-medium)",
+    color: "var(--text-tertiary)",
     fontSize: 11,
     fontWeight: 600,
     letterSpacing: "0.8px",
@@ -759,8 +759,8 @@ const s = {
   },
   td: {
     padding: "16px 18px",
-    borderBottom: "1px solid #f0f0f0",
-    color: "#0a0a0a",
+    borderBottom: "1px solid var(--border-light)",
+    color: "var(--text-primary)",
     fontSize: 14,
     fontWeight: 500,
   },
@@ -770,11 +770,11 @@ const s = {
   },
   typeToggleWrap: {
     padding: "14px 20px 6px",
-    background: "#fff",
+    background: "var(--bg-primary)",
   },
   typeToggle: {
     display: "flex",
-    background: "#f3f3f3",
+    background: "var(--bg-secondary)",
     borderRadius: 12,
     padding: 3,
     gap: 3,
@@ -787,30 +787,30 @@ const s = {
     background: "transparent",
     fontSize: 12,
     fontWeight: 600,
-    color: "#999",
+    color: "var(--text-tertiary)",
     cursor: "pointer",
     fontFamily: "inherit",
     transition: "all 0.18s",
   },
   typeBtnActive: {
-    background: "#0a0a0a",
-    color: "#fff",
+    background: "var(--accent-color)",
+    color: "var(--btn-primary-text)",
     boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
   },
   header: { padding: "16px 20px 0" },
   title: {
     fontSize: 22,
     fontWeight: 600,
-    color: "#0a0a0a",
+    color: "var(--text-primary)",
     letterSpacing: "-0.5px",
   },
-  sub: { fontSize: 13, color: "#999", marginTop: 3 },
+  sub: { fontSize: 13, color: "var(--text-tertiary)", marginTop: 3 },
   searchWrap: { padding: "12px 20px 0" },
   searchBox: {
     display: "flex",
     alignItems: "center",
     gap: 10,
-    background: "#f5f5f5",
+    background: "var(--bg-secondary)",
     borderRadius: 14,
     padding: "10px 14px",
   },
@@ -820,7 +820,7 @@ const s = {
     border: "none",
     outline: "none",
     fontSize: 14,
-    color: "#0a0a0a",
+    color: "var(--text-primary)",
     fontFamily: "inherit",
   },
   clearBtn: {
@@ -840,24 +840,24 @@ const s = {
   fchip: {
     padding: "7px 14px",
     borderRadius: 30,
-    border: "1.5px solid #e8e8e8",
+    border: "1.5px solid var(--border-medium)",
     fontSize: 13,
     fontWeight: 500,
-    color: "#666",
-    background: "#fff",
+    color: "var(--text-secondary)",
+    background: "var(--card-bg)",
     whiteSpace: "nowrap",
     cursor: "pointer",
     fontFamily: "inherit",
     flexShrink: 0,
   },
-  fchipActive: { background: "#0a0a0a", color: "#fff", borderColor: "#0a0a0a" },
+  fchipActive: { background: "var(--btn-primary-bg)", color: "var(--btn-primary-text)", borderColor: "var(--btn-primary-bg)" },
   sortRow: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     padding: "12px 20px 8px",
   },
-  countText: { fontSize: 13, color: "#999" },
+  countText: { fontSize: 13, color: "var(--text-tertiary)" },
   sortSelectWrap: {
     display: "flex",
     alignItems: "center",
@@ -866,7 +866,7 @@ const s = {
   },
   sortSelect: {
     fontSize: 13,
-    color: "#666",
+    color: "var(--text-secondary)",
     fontWeight: 500,
     border: "none",
     background: "transparent",
@@ -885,7 +885,7 @@ const s = {
     borderRadius: 18,
     overflow: "hidden",
     cursor: "pointer",
-    background: "#f3f3f3",
+    background: "var(--bg-secondary)",
     position: "relative",
   },
   cardImg: {
@@ -917,8 +917,8 @@ const s = {
     position: "absolute",
     top: 10,
     right: 10,
-    background: "rgba(255,255,255,0.92)",
-    color: "#0a0a0a",
+    background: "var(--tabbar-bg)",
+    color: "var(--text-primary)",
     padding: "3px 8px",
     borderRadius: 20,
     fontSize: 10,
@@ -926,7 +926,7 @@ const s = {
   },
   addCard: {
     borderRadius: 18,
-    border: "2px dashed #e0e0e0",
+    border: "2px dashed var(--border-color)",
     aspectRatio: "3/4",
     display: "flex",
     flexDirection: "column",
@@ -934,11 +934,11 @@ const s = {
     justifyContent: "center",
     gap: 8,
     cursor: "pointer",
-    background: "#fafafa",
+    background: "var(--bg-tertiary)",
   },
   empty: {
     textAlign: "center",
-    color: "#bbb",
+    color: "var(--text-tertiary)",
     fontSize: 14,
     padding: "40px 0",
   },
@@ -981,8 +981,8 @@ const s = {
     gap: 4,
     padding: "5px 10px",
     borderRadius: 20,
-    background: "#0a0a0a",
-    color: "#fff",
+    background: "var(--btn-primary-bg)",
+    color: "var(--btn-primary-text)",
     fontSize: 12,
     fontWeight: 600,
     flexShrink: 0,
@@ -990,26 +990,26 @@ const s = {
   dtag: {
     padding: "5px 12px",
     borderRadius: 20,
-    background: "#f3f3f3",
+    background: "var(--bg-secondary)",
     fontSize: 12,
     fontWeight: 500,
-    color: "#555",
+    color: "var(--text-secondary)",
   },
-  divider: { height: "0.5px", background: "#ececec", margin: "16px 0" },
+  divider: { height: "0.5px", background: "var(--border-light)", margin: "16px 0" },
   detailRow: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     padding: "8px 0",
   },
-  detailLabel: { fontSize: 13, color: "#999" },
-  detailVal: { fontSize: 13, fontWeight: 500, color: "#0a0a0a" },
+  detailLabel: { fontSize: 13, color: "var(--text-tertiary)" },
+  detailVal: { fontSize: 13, fontWeight: 500, color: "var(--text-primary)" },
   notesBox: {
     fontSize: 13,
-    color: "#666",
+    color: "var(--text-secondary)",
     lineHeight: 1.6,
     padding: "12px 14px",
-    background: "#f7f7f7",
+    background: "var(--bg-secondary)",
     borderRadius: 12,
   },
   deleteBtn: {

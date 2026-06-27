@@ -23,7 +23,7 @@ ChartJS.register(
 
 const PERIODS = ["This month", "Last 6 months", "This year", "All time"];
 
-export default function StatsScreen() {
+export default function StatsScreen({ theme }) {
   const [cuts, setCuts] = useState([]);
   const [period, setPeriod] = useState("Last 6 months");
   const [loading, setLoading] = useState(true);
@@ -233,15 +233,22 @@ export default function StatsScreen() {
       ? new Date(new Date(lastCut.date).getTime() + avgInterval * 86400000)
       : null;
 
+  const isDark = theme === "dark";
+  const primaryColor = isDark ? "#f5f5f5" : "#0a0a0a";
+  const lineBgColor = isDark ? "rgba(245, 245, 245, 0.08)" : "rgba(10, 10, 10, 0.06)";
+  const gridColor = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)";
+  const tooltipBgColor = isDark ? "#1f1f1f" : "#0a0a0a";
+
   const lineData = {
     labels: periodData.map((m) => m.label),
     datasets: [
       {
+        label: "Cuts",
         data: periodData.map((m) => m.count),
-        borderColor: "#0a0a0a",
-        backgroundColor: "rgba(10,10,10,0.06)",
+        borderColor: primaryColor,
+        backgroundColor: lineBgColor,
         borderWidth: 2.5,
-        pointBackgroundColor: "#0a0a0a",
+        pointBackgroundColor: primaryColor,
         pointRadius: 4,
         tension: 0.35,
         fill: true,
@@ -255,7 +262,7 @@ export default function StatsScreen() {
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: "#0a0a0a",
+        backgroundColor: tooltipBgColor,
         titleColor: "#fff",
         bodyColor: "rgba(255,255,255,0.7)",
         padding: 10,
@@ -270,7 +277,7 @@ export default function StatsScreen() {
         border: { display: false },
       },
       y: {
-        grid: { color: "rgba(0,0,0,0.05)" },
+        grid: { color: gridColor },
         ticks: { color: "#aaa", font: { size: 11 }, stepSize: 1 },
         border: { display: false },
         min: 0,
@@ -396,16 +403,16 @@ export default function StatsScreen() {
             <div style={s.donutTitle}>By rating</div>
             <DonutChart
               segments={[
-                { pct: firePct, color: "#0a0a0a" },
+                { pct: firePct, color: isDark ? "#f5f5f5" : "#0a0a0a" },
                 { pct: goodPct, color: "#888" },
-                { pct: mehPct, color: "#d8d8d8" },
+                { pct: mehPct, color: isDark ? "#333333" : "#d8d8d8" },
               ]}
               center={totalCuts}
             />
             <div style={s.legend}>
-              <LegItem color="#0a0a0a" label={`Fire ${firePct}%`} />
+              <LegItem color={isDark ? "#f5f5f5" : "#0a0a0a"} label={`Fire ${firePct}%`} />
               <LegItem color="#888" label={`Good ${goodPct}%`} />
-              <LegItem color="#d8d8d8" label={`Meh ${mehPct}%`} />
+              <LegItem color={isDark ? "#333333" : "#d8d8d8"} label={`Meh ${mehPct}%`} />
             </div>
           </div>
         </div>
@@ -509,33 +516,31 @@ function StatCard({ val, label, trend, up, neutral }) {
   return (
     <div
       style={{
-        background: "#f7f7f7",
+        background: "var(--statcard-bg)",
         borderRadius: 14,
         padding: 14,
-        borderTop: "1px solid rgba(255, 255, 255, 0.4)" /* Glass effect */,
-        borderLeft: "1px solid rgba(255, 255, 255, 0.3)",
-        boxShadow: "3px 3px 3px rgba(0, 0, 0, 0.089)",
-        backdropFilter: "blur(8px)" /* The blurring effect */,
+        border: "1px solid var(--border-light)",
+        boxShadow: "3px 3px 3px rgba(0, 0, 0, 0.03)",
       }}
     >
       <div
         style={{
           fontSize: 24,
           fontWeight: 600,
-          color: "#0a0a0a",
+          color: "var(--statcard-val)",
           letterSpacing: "-0.5px",
           fontFamily: "monospace",
         }}
       >
         {val}
       </div>
-      <div style={{ fontSize: 12, color: "#999", marginTop: 2 }}>{label}</div>
+      <div style={{ fontSize: 12, color: "var(--statcard-label)", marginTop: 2 }}>{label}</div>
       <div
         style={{
           fontSize: 11,
           fontWeight: 600,
           marginTop: 5,
-          color: up ? "#2e7d32" : neutral ? "#888" : "#c62828",
+          color: up ? "var(--statcard-trend-up)" : neutral ? "var(--statcard-trend-neutral)" : "var(--statcard-trend-down)",
         }}
       >
         {trend}
@@ -604,7 +609,7 @@ function LegItem({ color, label }) {
         alignItems: "center",
         gap: 6,
         fontSize: 11,
-        color: "#666",
+        color: "var(--text-secondary)",
       }}
     >
       <div
@@ -625,11 +630,11 @@ const s = {
   container: { overflowY: "auto", paddingBottom: 100, fontFamily: "sans-serif" },
   typeToggleWrap: {
     padding: "14px 20px 6px",
-    background: "#fff",
+    background: "var(--bg-primary)",
   },
   typeToggle: {
     display: "flex",
-    background: "#f3f3f3",
+    background: "var(--bg-secondary)",
     borderRadius: 12,
     padding: 3,
     gap: 3,
@@ -642,19 +647,19 @@ const s = {
     background: "transparent",
     fontSize: 12,
     fontWeight: 600,
-    color: "#999",
+    color: "var(--text-tertiary)",
     cursor: "pointer",
     fontFamily: "inherit",
     transition: "all 0.18s",
   },
   typeBtnActive: {
-    background: "#0a0a0a",
-    color: "#fff",
+    background: "var(--accent-color)",
+    color: "var(--btn-primary-text)",
     boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
   },
   empty: {
     textAlign: "center",
-    color: "#bbb",
+    color: "var(--text-tertiary)",
     fontSize: 14,
     padding: "32px 0",
   },
@@ -668,35 +673,35 @@ const s = {
   pchip: {
     padding: "6px 14px",
     borderRadius: 30,
-    border: "1.5px solid #e8e8e8",
+    border: "1.5px solid var(--border-medium)",
     fontSize: 12,
     fontWeight: 600,
-    color: "#888",
-    background: "#fff",
+    color: "var(--text-tertiary)",
+    background: "var(--card-bg)",
     whiteSpace: "nowrap",
     cursor: "pointer",
     fontFamily: "inherit",
     flexShrink: 0,
   },
-  pchipActive: { background: "#0a0a0a", color: "#fff", borderColor: "#0a0a0a" },
+  pchipActive: { background: "var(--btn-primary-bg)", color: "var(--btn-primary-text)", borderColor: "var(--btn-primary-bg)" },
   statGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(2, minmax(0,1fr))",
     gap: 10,
   },
   chartCard: {
-    background: "#f7f7f7",
+    background: "var(--bg-secondary)",
     borderRadius: 16,
     padding: 16,
-    borderTop: "1px solid rgba(255, 255, 255, 0.4)" /* Glass effect */,
-    borderLeft: "1px solid rgba(255, 255, 255, 0.3)",
-    boxShadow: "3px 3px 3px rgba(0, 0, 0, 0.089)",
-    backdropFilter: "blur(8px)" /* The blurring effect */,
+    borderTop: "1px solid var(--border-light)",
+    borderLeft: "1px solid var(--border-light)",
+    boxShadow: "3px 3px 3px rgba(0, 0, 0, 0.03)",
+    backdropFilter: "blur(8px)",
   },
   barRow: { display: "flex", alignItems: "center", gap: 10, marginBottom: 10 },
   barLabel: {
     fontSize: 12,
-    color: "#666",
+    color: "var(--text-secondary)",
     width: 68,
     textAlign: "right",
     flexShrink: 0,
@@ -707,13 +712,13 @@ const s = {
   barTrack: {
     flex: 1,
     height: 24,
-    background: "#ececec",
+    background: "var(--border-light)",
     borderRadius: 7,
     overflow: "hidden",
   },
   barFill: {
     height: "100%",
-    background: "#0a0a0a",
+    background: "var(--accent-color)",
     borderRadius: 7,
     display: "flex",
     alignItems: "center",
@@ -727,23 +732,22 @@ const s = {
     color: "#fff",
     fontFamily: "monospace",
   },
-
   donutCard: {
-    background: "#f7f7f7",
+    background: "var(--bg-secondary)",
     borderRadius: 16,
     padding: 14,
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    borderTop: "1px solid rgba(255, 255, 255, 0.4)" /* Glass effect */,
-    borderLeft: "1px solid rgba(255, 255, 255, 0.3)",
-    boxShadow: "3px 3px 3px rgba(0, 0, 0, 0.089)",
-    backdropFilter: "blur(8px)" /* The blurring effect */,
+    borderTop: "1px solid var(--border-light)",
+    borderLeft: "1px solid var(--border-light)",
+    boxShadow: "3px 3px 3px rgba(0, 0, 0, 0.03)",
+    backdropFilter: "blur(8px)",
   },
   donutTitle: {
     fontSize: 12,
     fontWeight: 600,
-    color: "#888",
+    color: "var(--text-tertiary)",
     marginBottom: 10,
     textAlign: "center",
   },
@@ -765,21 +769,21 @@ const s = {
     width: 32,
     height: 32,
     borderRadius: "50%",
-    background: "#e0e0e0",
+    background: "var(--border-color)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontSize: 12,
     fontWeight: 600,
-    color: "#666",
+    color: "var(--text-secondary)",
     flexShrink: 0,
   },
-  barberName: { fontSize: 13, fontWeight: 500, color: "#0a0a0a" },
-  barberCount: { fontSize: 11, color: "#999", marginTop: 1 },
+  barberName: { fontSize: 13, fontWeight: 500, color: "var(--text-primary)" },
+  barberCount: { fontSize: 11, color: "var(--text-tertiary)", marginTop: 1 },
   barberPrice: {
     fontSize: 13,
     fontWeight: 600,
-    color: "#0a0a0a",
+    color: "var(--text-primary)",
     fontFamily: "monospace",
   },
   tlRow: {
@@ -792,7 +796,7 @@ const s = {
     width: 23,
     height: 23,
     borderRadius: "50%",
-    background: "#0a0a0a",
+    background: "var(--accent-color)",
     flexShrink: 0,
     display: "flex",
     alignItems: "center",
@@ -802,14 +806,14 @@ const s = {
   tlName: {
     fontSize: 13,
     fontWeight: 600,
-    color: "#0a0a0a",
+    color: "var(--text-primary)",
     letterSpacing: "-0.2px",
   },
-  tlMeta: { fontSize: 11, color: "#999", marginTop: 2 },
+  tlMeta: { fontSize: 11, color: "var(--text-tertiary)", marginTop: 2 },
   tlPrice: {
     fontSize: 12,
     fontWeight: 600,
-    color: "#555",
+    color: "var(--text-secondary)",
     marginTop: 3,
     fontFamily: "monospace",
   },
