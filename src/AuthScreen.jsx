@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient"; // your supabase client
 import HomePage from "./Home";
 
-import logo from "../public/logo.png";
+const logo = "/logo.png";
 
 
 export function AuthScreen() {
@@ -66,6 +66,15 @@ export function AuthScreen() {
     });
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (tab === "login") {
+      handleLogin();
+    } else {
+      handleSignup();
+    }
+  };
+
   if (initializing) {
     return (
       <div style={styles.loadingContainer}>
@@ -83,95 +92,113 @@ export function AuthScreen() {
 
   if (success) {
     return (
-      <div style={styles.center}>
-        <p>
-          Check your inbox! We sent a confirmation link to{" "}
-          <strong>{email}</strong>.
-        </p>
-        <button onClick={() => setSuccess(false)}>Back to login</button>
+      <div style={styles.wrapper}>
+        <div style={styles.container}>
+          <div style={styles.center}>
+            <p style={{ lineHeight: "1.6", color: "#444", marginBottom: "24px" }}>
+              Check your inbox! We sent a confirmation link to{" "}
+              <strong>{email}</strong>.
+            </p>
+            <button style={styles.btnMain} onClick={() => setSuccess(false)}>
+              Back to login
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
+    <div style={styles.wrapper}>
+      <div style={styles.container}>
+        <div>
+          <img style={{ maxWidth: 150, maxHeight: 150, display: "block", margin: "auto", paddingBottom: "48px" }} src={logo} alt="Logo" />
+        </div>
 
+        <div style={styles.tabs}>
+          <button
+            type="button"
+            style={tab === "login" ? styles.tabActive : styles.tab}
+            onClick={() => setTab("login")}
+          >
+            Log in
+          </button>
 
-    <div style={styles.container}>
+          <button
+            type="button"
+            style={tab === "signup" ? styles.tabActive : styles.tab}
+            onClick={() => setTab("signup")}
+          >
+            Sign up
+          </button>
+        </div>
 
-      <div>
-        <img style={{ maxWidth: 150, maxHeight: 150, display: "block", margin: "auto", paddingBottom: "48px" }} src={logo} alt="Logo" />
+        <form onSubmit={handleSubmit} style={styles.form}>
+          {tab === "signup" && (
+            <input
+              style={styles.input}
+              placeholder="Full name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required={tab === "signup"}
+            />
+          )}
+          <input
+            style={styles.input}
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <input
+            style={styles.input}
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+
+          {error && <p style={styles.error}>{error}</p>}
+
+          <button
+            type="submit"
+            style={styles.btnMain}
+            disabled={loading}
+          >
+            {loading
+              ? "Please wait…"
+              : tab === "login"
+                ? "Log in"
+                : "Create account"}
+          </button>
+        </form>
       </div>
-
-      <div style={styles.tabs}>
-        <button
-          style={tab === "login" ? styles.tabActive : styles.tab}
-          onClick={() => setTab("login")}
-        >
-          Log in
-        </button>
-
-
-        <button
-          style={tab === "signup" ? styles.tabActive : styles.tab}
-          onClick={() => setTab("signup")}
-        >
-          Sign up
-        </button>
-      </div>
-
-
-      {tab === "signup" && (
-        <input
-          style={styles.input}
-          placeholder="Full name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-      )}
-      <input
-        style={styles.input}
-        type="email"
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
-      <input
-        style={styles.input}
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-
-      {error && <p style={styles.error}>{error}</p>}
-
-      <button
-        style={styles.btnMain}
-        disabled={loading}
-        onClick={tab === "login" ? handleLogin : handleSignup}
-      >
-        {loading
-          ? "Please wait…"
-          : tab === "login"
-            ? "Log in"
-            : "Create account"}
-      </button>
-
-      {/*  <button style={styles.btnGoogle} onClick={handleGoogle}>
-        Continue with Google
-      </button>
-*/}
     </div>
   );
 }
 
 const styles = {
   title: { textAlign: "center", fontSize: 32, marginBottom: 28 },
+  wrapper: {
+    width: "100%",
+    height: "100%",
+    overflowY: "auto",
+    WebkitOverflowScrolling: "touch",
+    background: "#ffffff",
+    boxSizing: "border-box",
+  },
   container: {
     maxWidth: 390,
     margin: "0 auto",
-    padding: "130px 28px",
+    padding: "80px 28px 48px",
+    boxSizing: "border-box",
     fontFamily: "sans-serif",
+  },
+  form: {
+    display: "block",
+    width: "100%",
   },
   center: { textAlign: "center", padding: 40 },
   tabs: {
@@ -245,8 +272,8 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    height: "100vh",
-    width: "100vw",
+    height: "100%",
+    width: "100%",
     background: "#ffffff",
     fontFamily: "sans-serif",
   },
