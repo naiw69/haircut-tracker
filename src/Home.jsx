@@ -397,7 +397,12 @@ const s = {
     marginTop: 4,
     transition: "background 0.15s",
   },
-  screen: { flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch" },
+  screen: {
+    flex: 1,
+    overflowY: "auto",
+    WebkitOverflowScrolling: "touch",
+    zIndex: "var(--screen-z-index, 1)",
+  },
   tabBar: {
     position: "absolute",
     bottom: 24,

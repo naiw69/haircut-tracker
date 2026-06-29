@@ -18,6 +18,17 @@ export default function AddScreen({ onSave }) {
     });
   };
 
+  useEffect(() => {
+    if (priceModal.open) {
+      document.documentElement.style.setProperty("--screen-z-index", "10");
+    } else {
+      document.documentElement.style.setProperty("--screen-z-index", "1");
+    }
+    return () => {
+      document.documentElement.style.setProperty("--screen-z-index", "1");
+    };
+  }, [priceModal.open]);
+
   return (
     <div style={s.container}>
       {/* Mode Toggle */}
